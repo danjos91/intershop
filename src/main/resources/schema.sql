@@ -1,20 +1,25 @@
 CREATE TABLE IF NOT EXISTS items (
-    id BIG SERIAL PRIMARY KEY,
-    title VARCHAR(256) NOT NULL,
-    --text TEXT NOT NULL,
-    image_path VARCHAR(512),
-    --tags TEXT,
-    --likes INTEGER DEFAULT 0
+                                        id BIG SERIAL PRIMARY KEY,
+                                        name VARCHAR(256) NOT NULL,
+                                        description TEXT,
+                                        image_path VARCHAR(512),
+                                        --tags TEXT,
+                                        --likes INTEGER DEFAULT 0
  );
 
 CREATE TABLE IF NOT EXISTS orders (
                                         id BIG SERIAL PRIMARY KEY,
-                                        item_id BIGINT,
+                                        user_id BIGINT,
 --                                        text TEXT NOT NULL,
-                                        FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+                                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-INSERT INTO itmes(title, image_path)
+CREATE TABLE IF NOT EXISTS users (
+                                        id BIG SERIAL PRIMARY KEY,
+                                        name VARCHAR(256) NOT NULL,
+);
+
+INSERT INTO items(title, image_path)
 VALUES ('Item1',
         none1',
         );

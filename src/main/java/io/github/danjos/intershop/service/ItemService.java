@@ -2,29 +2,41 @@ package io.github.danjos.intershop.service;
 
 import io.github.danjos.intershop.model.Item;
 import io.github.danjos.intershop.repository.ItemRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-public class ItemService {
+import java.util.List;
 
+@Service
+@RequiredArgsConstructor
+public class ItemService {
     private final ItemRepository itemRepository;
 
-    public ItemService(ItemRepository itemRepository) {
-        this.itemRepository = itemRepository;
-    }
-
-    public void deleteItem(Long id) {
-    }
-
-    public void createItem(String title, String text, MultipartFile image, String tags) {
+    public List<Item> searchItems(String query, String sort) {
+        if (query != null && !query.isEmpty()) {
+            return itemRepository.findByTitleContaining(query);
+        }
+        if ("ALPHA".equals(sort)) {
+            return itemRepository.findByOrderByTitleAsc();
+        }
+        if ("PRICE".equals(sort)) {
+            return itemRepository.findByOrderByPriceAsc();
+        }
+        return itemRepository.findAll();
     }
 
     public Item getItemById(Long id) {
-        //TODO check teory
-        return null;
+        return itemRepository.findById(id).orElseThrow();
     }
 
-    public Page<Item> getItems(String search, int pageNumber, int pageSize) {
-        return null;
+    public void deleteItem(Long id) {
+        itemRepository.deleteById(id);
     }
 }
+
+
+
+
+

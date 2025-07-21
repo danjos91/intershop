@@ -6,18 +6,15 @@ import lombok.Data;
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
 @Entity
+@Data
 public class User {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String username;
+    private String password;
+    private String email;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
-
-    @Column
-    private String name;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user")
     private List<Order> orders = new ArrayList<>();
-
 }

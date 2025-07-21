@@ -3,20 +3,27 @@ package io.github.danjos.intershop.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
-@Data
 @Entity
+@Data
 public class Order {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public long id;
+    private Long id;
 
-    @Column(name = "user_id")
-    public long userId;
+    @ManyToOne
+    private User user;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    public List<Item> items;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    private List<OrderItem> items = new ArrayList<>();
 
+    private LocalDateTime orderDate;
+    private String status;
+
+    public double getTotalSum() {
+        return items.stream().mapToDouble(oi -> oi.getPrice() * oi.getQuantity()).sum();
+    }
 }

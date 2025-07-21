@@ -5,13 +5,17 @@ import lombok.Data;
 
 @Entity
 @Data
-public class Item {
+public class OrderItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String title;
-    private String description;
+
+    @ManyToOne
+    private Order order;
+
+    @ManyToOne
+    private Item item;
+
+    private int quantity;
     private double price;
-    private String imgPath;
-    private int stock;
 }

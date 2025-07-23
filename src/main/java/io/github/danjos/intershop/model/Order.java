@@ -26,4 +26,8 @@ public class Order {
     public double getTotalSum() {
         return items.stream().mapToDouble(oi -> oi.getPrice() * oi.getQuantity()).sum();
     }
+
+    public Long getId() {
+        return id;
+    }
 }

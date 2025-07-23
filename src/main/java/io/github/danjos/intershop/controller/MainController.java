@@ -5,6 +5,7 @@ import io.github.danjos.intershop.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.ui.Model;
 
@@ -12,10 +13,11 @@ import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
+@RequestMapping({"/main", "/"})
 public class MainController {
     private final ItemService itemService;
 
-    @GetMapping("/main/items")
+    @GetMapping
     public String showMainPage(
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "NO") String sort,

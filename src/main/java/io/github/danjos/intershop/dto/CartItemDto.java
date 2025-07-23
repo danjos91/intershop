@@ -3,7 +3,6 @@ package io.github.danjos.intershop.dto;
 import io.github.danjos.intershop.model.Item;
 import lombok.Data;
 
-// CartItemDto.java (in a new dtos package)
 @Data
 public class CartItemDto {
     private Long id;
@@ -20,5 +19,13 @@ public class CartItemDto {
         this.price = item.getPrice();
         this.imgPath = item.getImgPath();
         this.count = count;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public int getCount() {
+        return count;
     }
 }

@@ -41,5 +41,4 @@ public class MainController {
         model.addAttribute("paging", paging);
         return "main";
     }
-
 }

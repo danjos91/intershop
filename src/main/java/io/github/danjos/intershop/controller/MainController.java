@@ -34,7 +34,7 @@ public class MainController {
 //            List<Comment> comments = commentService.getCommentsByPostId(pm.getId());
 //            pm.setComments(comments);
 //        }
-        Paging paging = new Paging(pageNumber, pageSize, postPage.hasNext(), postPage.hasPrevious());
+        Paging paging = new Paging(pageNumber, pageSize, mainPage.hasNext(), mainPage.hasPrevious());
 
         model.addAttribute("items", mainPage.getContent());
         model.addAttribute("search", search);

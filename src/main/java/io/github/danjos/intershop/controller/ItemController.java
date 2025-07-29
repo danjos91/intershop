@@ -1,6 +1,6 @@
 package io.github.danjos.intershop.controller;
 
-
+import io.github.danjos.intershop.dto.CartItemDto;
 import io.github.danjos.intershop.service.CartService;
 import io.github.danjos.intershop.service.ItemService;
 import jakarta.servlet.http.HttpSession;
@@ -9,6 +9,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @Controller
 @RequiredArgsConstructor
 public class ItemController {
@@ -16,8 +18,13 @@ public class ItemController {
     private final CartService cartService;
 
     @GetMapping("/items/{id}")
-    public String showItem(@PathVariable Long id, Model model) {
-        model.addAttribute("item", itemService.getItemById(id));
+    public String showItem(@PathVariable Long id, Model model, HttpSession session) {
+        // Get cart information to show count for this item
+        Map<Long, Integer> cart = cartService.getCart(session);
+        int count = cart.getOrDefault(id, 0);
+        
+        CartItemDto itemWithCount = new CartItemDto(itemService.getItemById(id), count);
+        model.addAttribute("item", itemWithCount);
         return "item";
     }
 

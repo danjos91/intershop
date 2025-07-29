@@ -3,7 +3,7 @@ INSERT INTO users (username, password, email, created_at)
 VALUES ('currentUser', 'password123', 'user@example.com', CURRENT_TIMESTAMP)
 ON DUPLICATE KEY UPDATE username = username;
 
--- Insert sample items
+-- Insert sample items with correct image paths
 INSERT INTO items (title, description, price, img_path, stock, created_at) VALUES
 ('Laptop', 'High-performance laptop with latest specifications', 999.99, 'images/laptop.jpg', 10, CURRENT_TIMESTAMP),
 ('Smartphone', 'Latest smartphone with advanced features', 699.99, 'images/smartphone.jpg', 15, CURRENT_TIMESTAMP),

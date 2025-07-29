@@ -16,7 +16,4 @@ public class Item {
     private String imgPath;
     private int stock;
 
-    public double getPrice() {
-        return price;
-    }
 }

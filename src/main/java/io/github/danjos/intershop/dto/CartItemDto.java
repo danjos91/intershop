@@ -21,11 +21,4 @@ public class CartItemDto {
         this.count = count;
     }
 
-    public double getPrice() {
-        return price;
-    }
-
-    public int getCount() {
-        return count;
-    }
 }

@@ -6,29 +6,35 @@
 </head>
 
 <body>
-<a href="/cart/items" style="float:right;">
-    <b>КОРЗИНА &cudarrr;</b>
-</a>
-<a href="/main/items" style="float:right;">
-    <b>ГЛАВНАЯ &cudarrr;</b>
-</a>
-<table style="width:70%;margin-left:auto;margin-right:auto;">
-    <tr th:each="order : ${orders}">
-        <td>
-            <h2>
-                <a th:text="${'Заказ №'+order.id}" th:href="${'/orders/'+order.id}"></a>
-            </h2>
-            <table>
-                <tr th:each="item : ${order.items}">
-                    <td th:text="${item.item.title+' ('+item.quantity+' шт.) '+(item.price*item.quantity)+' руб.'}"></td>
-                </tr>
-            </table>
-            <p>
-                <b th:text="${'Сумма: '+order.totalSum}+' руб.'"></b>
-            </p>
-        </td>
-    </tr>
-</table>
+    <div style="float:right; margin-top: 10px;">
+        <a href="/cart/items" style="text-decoration:none;">
+            <button style="background-color:#2196F3;color:white;padding:10px 20px;margin-right:10px;border:none;border-radius:5px;cursor:pointer;font-size:16px;">
+                &#128722; КОРЗИНА
+            </button>
+        </a>
+        <a href="/main/items" style="text-decoration:none;">
+            <button style="background-color:#FF9800;color:white;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;">
+                &#127968; ГЛАВНАЯ
+            </button>
+        </a>
+    </div>
+    <table style="width:70%;margin-left:auto;margin-right:auto;">
+        <tr th:each="order : ${orders}">
+            <td>
+                <h2>
+                    <a th:text="${'Заказ №'+order.id}" th:href="${'/orders/'+order.id}"></a>
+                </h2>
+                <table>
+                    <tr th:each="item : ${order.items}">
+                        <td th:text="${item.item.title+' ('+item.quantity+' шт.) '+(item.price*item.quantity)+' руб.'}"></td>
+                    </tr>
+                </table>
+                <p>
+                    <b th:text="${'Сумма: '+order.totalSum}+' руб.'"></b>
+                </p>
+            </td>
+        </tr>
+    </table>
 </body>
 
 </html>

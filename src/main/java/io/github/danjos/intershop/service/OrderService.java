@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 public class OrderService {
     private final OrderRepository orderRepository;
     private final ItemService itemService;
-    private final UserService userService;
 
     public Order createOrderFromCart(Map<Long, Integer> cartItems, User user) {
         Order order = new Order();

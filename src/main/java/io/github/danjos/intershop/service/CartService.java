@@ -17,7 +17,6 @@ public class CartService {
     private final ItemService itemService;
 
     public void addItemToCart(Long itemId, HttpSession session) {
-        // Implementación del carrito en sesión
         Map<Long, Integer> cart = getCart(session);
         cart.put(itemId, cart.getOrDefault(itemId, 0) + 1);
     }

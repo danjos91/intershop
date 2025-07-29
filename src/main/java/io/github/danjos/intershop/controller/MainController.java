@@ -27,7 +27,7 @@ public class MainController {
     private final ItemService itemService;
     private final CartService cartService;
 
-    @GetMapping
+    @GetMapping({"/", "/items"})
     public String showMainPage(
             @RequestParam(required = false, defaultValue = "NO") String sort,
             @RequestParam(name = "search", required = false, defaultValue = "") String search,

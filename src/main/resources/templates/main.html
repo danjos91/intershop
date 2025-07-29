@@ -6,13 +6,20 @@
 </head>
 
 <body>
-    <a href="/orders" style="float:right;">
-        <b>ЗАКАЗЫ &cudarrr;</b>
-    </a>
-    <a href="/cart/items" style="float:right;">
-        <b>КОРЗИНА &cudarrr;</b>
-    </a>
-    <table style="width:70%;margin-left:auto;margin-right:auto;">
+    <div style="float:right; margin-top: 10px;">
+        <a href="/orders" style="text-decoration:none;">
+            <button style="background-color:#4CAF50;color:white;padding:10px 20px;margin-right:10px;border:none;border-radius:5px;cursor:pointer;font-size:16px;">
+                &#128179; ЗАКАЗЫ
+            </button>
+        </a>
+        <a href="/cart/items" style="text-decoration:none;">
+            <button style="background-color:#2196F3;color:white;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;">
+                &#128722; КОРЗИНА
+            </button>
+        </a>
+    </div>
+    <div style="display: flex; justify-content: center; align-items: center; width: 100%; min-height: 100px;">
+        <table style="width:70%;">
         <tr>
             <td>
                 <form>

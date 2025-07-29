@@ -20,7 +20,7 @@ public class ItemService {
     public Page<Item> searchItems(String query, int pageNumber, int pageSize, String sort) {
         Pageable pageable = PageRequest.of(pageNumber - 1, pageSize);
         if (query != null && !query.isEmpty()) {
-            return itemRepository.findByTitleContaining(query, pageable);
+            return itemRepository.findByTitleContainingIgnoreCase(query, pageable);
         }
         if ("ALPHA".equals(sort)) {
             return itemRepository.findByOrderByTitleAsc(pageable);

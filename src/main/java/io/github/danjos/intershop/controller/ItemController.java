@@ -19,7 +19,6 @@ public class ItemController {
 
     @GetMapping("/items/{id}")
     public String showItem(@PathVariable Long id, Model model, HttpSession session) {
-        // Get cart information to show count for this item
         Map<Long, Integer> cart = cartService.getCart(session);
         int count = cart.getOrDefault(id, 0);
         

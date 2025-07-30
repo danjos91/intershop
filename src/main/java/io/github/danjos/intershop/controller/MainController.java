@@ -39,10 +39,8 @@ public class MainController {
         Page<Item> mainPage = itemService.searchItems(search, pageNumber, pageSize, sort);
         Paging paging = new Paging(pageNumber, pageSize, mainPage.hasNext(), mainPage.hasPrevious());
 
-        // Get cart information to show count for each item
         Map<Long, Integer> cart = cartService.getCart(session);
         
-        // Convert items to CartItemDto with cart count
         List<CartItemDto> itemsWithCount = mainPage.getContent().stream()
                 .map(item -> new CartItemDto(item, cart.getOrDefault(item.getId(), 0)))
                 .collect(Collectors.toList());

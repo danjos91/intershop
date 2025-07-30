@@ -1,5 +1,6 @@
 package io.github.danjos.intershop.service;
 
+import io.github.danjos.intershop.exception.NotFoundException;
 import io.github.danjos.intershop.model.Item;
 import io.github.danjos.intershop.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,8 @@ public class ItemService {
     }
 
     public Item getItemById(Long id) {
-        return itemRepository.findById(id).orElseThrow();
+        return itemRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Item with id " + id + " not found"));
     }
 
     public void deleteItem(Long id) {

@@ -12,7 +12,6 @@ public class UserService {
     private final UserRepository userRepository;
 
     public User getCurrentUser() {
-
-        return userRepository.findByUsername("currentUser").orElseThrow(); // Todo with spring security
+        return userRepository.findByUsername("currentUser").orElseThrow();
     }
 }

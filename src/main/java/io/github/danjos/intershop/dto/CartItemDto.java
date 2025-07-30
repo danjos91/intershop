@@ -10,7 +10,7 @@ public class CartItemDto {
     private String description;
     private double price;
     private String imgPath;
-    private int count;  // <- This is the quantity in cart
+    private int count;
 
     public CartItemDto(Item item, int count) {
         this.id = item.getId();
@@ -20,5 +20,4 @@ public class CartItemDto {
         this.imgPath = item.getImgPath();
         this.count = count;
     }
-
 }

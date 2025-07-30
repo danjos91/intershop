@@ -16,4 +16,6 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
   sql:
     init:
-      mode: never 
+      mode: always
+      schema-locations: classpath:test-schema.sql
+      data-locations: classpath:test-data.sql 

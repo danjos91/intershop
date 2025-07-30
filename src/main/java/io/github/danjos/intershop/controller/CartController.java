@@ -1,7 +1,6 @@
 package io.github.danjos.intershop.controller;
 
 import io.github.danjos.intershop.dto.CartItemDto;
-import io.github.danjos.intershop.model.Item;
 import io.github.danjos.intershop.model.Order;
 import io.github.danjos.intershop.model.User;
 import io.github.danjos.intershop.service.CartService;
@@ -55,7 +54,7 @@ public class CartController {
         User user = userService.getCurrentUser();
         Order order = orderService.createOrderFromCart(cart, user);
 
-        session.removeAttribute("cart"); //clean after buy
+        session.removeAttribute("cart");
 
         return "redirect:/orders/" + order.getId() + "?newOrder=true";
     }

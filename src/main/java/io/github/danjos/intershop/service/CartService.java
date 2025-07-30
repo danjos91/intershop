@@ -19,6 +19,7 @@ public class CartService {
     public void addItemToCart(Long itemId, HttpSession session) {
         Map<Long, Integer> cart = getCart(session);
         cart.put(itemId, cart.getOrDefault(itemId, 0) + 1);
+        session.setAttribute("cart", cart);
     }
 
     public void removeItemFromCart(Long itemId, HttpSession session) {
@@ -30,6 +31,7 @@ public class CartService {
                 cart.remove(itemId);
             }
         }
+        session.setAttribute("cart", cart);
     }
 
     public Map<Long, Integer> getCart(HttpSession session) {

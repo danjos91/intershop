@@ -14,7 +14,7 @@ spring:
         trace: false
         web-allow-others: false
   jpa:
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: update # TODO check 'validate' for production-like safety
     properties:

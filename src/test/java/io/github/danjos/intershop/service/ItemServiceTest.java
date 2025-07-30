@@ -19,155 +19,134 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ItemServiceTest {
 
-    @Mock
-    private ItemRepository itemRepository;
+   @Mock
+   private ItemRepository itemRepository;
 
-    @InjectMocks
-    private ItemService itemService;
+   @InjectMocks
+   private ItemService itemService;
 
-    private Item laptop;
-    private Item smartphone;
-    private List<Item> items;
+   private Item laptop;
+   private Item smartphone;
+   private List<Item> items;
 
-    @BeforeEach
-    void setUp() {
-        laptop = new Item();
-        laptop.setId(1L);
-        laptop.setTitle("Laptop");
-        laptop.setDescription("High performance laptop");
-        laptop.setPrice(999.99);
-        laptop.setStock(10);
+   @BeforeEach
+   void setUp() {
+       laptop = new Item();
+       laptop.setId(1L);
+       laptop.setTitle("Laptop");
+       laptop.setDescription("High performance laptop");
+       laptop.setPrice(999.99);
+       laptop.setStock(10);
 
-        smartphone = new Item();
-        smartphone.setId(2L);
-        smartphone.setTitle("Smartphone");
-        smartphone.setDescription("Latest smartphone");
-        smartphone.setPrice(599.99);
-        smartphone.setStock(15);
+       smartphone = new Item();
+       smartphone.setId(2L);
+       smartphone.setTitle("Smartphone");
+       smartphone.setDescription("Latest smartphone");
+       smartphone.setPrice(599.99);
+       smartphone.setStock(15);
 
-        items = Arrays.asList(laptop, smartphone);
-    }
+       items = Arrays.asList(laptop, smartphone);
+   }
 
-    @Test
-    void searchItems_WithQuery_ShouldReturnFilteredResults() {
-        // Given
-        String query = "laptop";
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Item> expectedPage = new PageImpl<>(List.of(laptop), pageable, 1);
-        
-        when(itemRepository.findByTitleContainingIgnoreCase(query, pageable))
-                .thenReturn(expectedPage);
+   @Test
+   void searchItems_WithQuery_ShouldReturnFilteredResults() {
+       String query = "laptop";
+       Pageable pageable = PageRequest.of(0, 10);
+       Page<Item> expectedPage = new PageImpl<>(List.of(laptop), pageable, 1);
 
-        // When
-        Page<Item> result = itemService.searchItems(query, 1, 10, null);
+       when(itemRepository.findByTitleContainingIgnoreCase(query, pageable))
+               .thenReturn(expectedPage);
 
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
-        verify(itemRepository).findByTitleContainingIgnoreCase(query, pageable);
-    }
+       Page<Item> result = itemService.searchItems(query, 1, 10, null);
 
-    @Test
-    void searchItems_WithAlphaSort_ShouldReturnSortedResults() {
-        // Given
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Item> expectedPage = new PageImpl<>(items, pageable, 2);
-        
-        when(itemRepository.findByOrderByTitleAsc(pageable))
-                .thenReturn(expectedPage);
+       assertThat(result).isNotNull();
+       assertThat(result.getContent()).hasSize(1);
+       assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
+       verify(itemRepository).findByTitleContainingIgnoreCase(query, pageable);
+   }
 
-        // When
-        Page<Item> result = itemService.searchItems(null, 1, 10, "ALPHA");
+   @Test
+   void searchItems_WithAlphaSort_ShouldReturnSortedResults() {
+       Pageable pageable = PageRequest.of(0, 10);
+       Page<Item> expectedPage = new PageImpl<>(items, pageable, 2);
 
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getContent()).hasSize(2);
-        verify(itemRepository).findByOrderByTitleAsc(pageable);
-    }
+       when(itemRepository.findByOrderByTitleAsc(pageable))
+               .thenReturn(expectedPage);
 
-    @Test
-    void searchItems_WithPriceSort_ShouldReturnSortedResults() {
-        // Given
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Item> expectedPage = new PageImpl<>(items, pageable, 2);
-        
-        when(itemRepository.findByOrderByPriceAsc(pageable))
-                .thenReturn(expectedPage);
+       Page<Item> result = itemService.searchItems(null, 1, 10, "ALPHA");
 
-        // When
-        Page<Item> result = itemService.searchItems(null, 1, 10, "PRICE");
+       assertThat(result).isNotNull();
+       assertThat(result.getContent()).hasSize(2);
+       verify(itemRepository).findByOrderByTitleAsc(pageable);
+   }
 
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getContent()).hasSize(2);
-        verify(itemRepository).findByOrderByPriceAsc(pageable);
-    }
+   @Test
+   void searchItems_WithPriceSort_ShouldReturnSortedResults() {
+       Pageable pageable = PageRequest.of(0, 10);
+       Page<Item> expectedPage = new PageImpl<>(items, pageable, 2);
 
-    @Test
-    void searchItems_WithoutQueryAndSort_ShouldReturnAllItems() {
-        // Given
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Item> expectedPage = new PageImpl<>(items, pageable, 2);
-        
-        when(itemRepository.findAll(pageable))
-                .thenReturn(expectedPage);
+       when(itemRepository.findByOrderByPriceAsc(pageable))
+               .thenReturn(expectedPage);
 
-        // When
-        Page<Item> result = itemService.searchItems(null, 1, 10, null);
+       Page<Item> result = itemService.searchItems(null, 1, 10, "PRICE");
 
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getContent()).hasSize(2);
-        verify(itemRepository).findAll(pageable);
-    }
+       assertThat(result).isNotNull();
+       assertThat(result.getContent()).hasSize(2);
+       verify(itemRepository).findByOrderByPriceAsc(pageable);
+   }
 
-    @Test
-    void getItemById_WithValidId_ShouldReturnItem() {
-        // Given
-        Long itemId = 1L;
-        when(itemRepository.findById(itemId))
-                .thenReturn(Optional.of(laptop));
+   @Test
+   void searchItems_WithoutQueryAndSort_ShouldReturnAllItems() {
+       Pageable pageable = PageRequest.of(0, 10);
+       Page<Item> expectedPage = new PageImpl<>(items, pageable, 2);
 
-        // When
-        Item result = itemService.getItemById(itemId);
+       when(itemRepository.findAll(pageable))
+               .thenReturn(expectedPage);
 
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(itemId);
-        assertThat(result.getTitle()).isEqualTo("Laptop");
-        verify(itemRepository).findById(itemId);
-    }
+       Page<Item> result = itemService.searchItems(null, 1, 10, null);
 
-    @Test
-    void getItemById_WithInvalidId_ShouldThrowException() {
-        // Given
-        Long itemId = 999L;
-        when(itemRepository.findById(itemId))
-                .thenReturn(Optional.empty());
+       assertThat(result).isNotNull();
+       assertThat(result.getContent()).hasSize(2);
+       verify(itemRepository).findAll(pageable);
+   }
 
-        // When & Then
-        assertThatThrownBy(() -> itemService.getItemById(itemId))
-                .isInstanceOf(RuntimeException.class);
-        verify(itemRepository).findById(itemId);
-    }
+   @Test
+   void getItemById_WithValidId_ShouldReturnItem() {
+       Long itemId = 1L;
+       when(itemRepository.findById(itemId))
+               .thenReturn(Optional.of(laptop));
 
-    @Test
-    void deleteItem_WithValidId_ShouldDeleteItem() {
-        // Given
-        Long itemId = 1L;
-        doNothing().when(itemRepository).deleteById(itemId);
+       Item result = itemService.getItemById(itemId);
 
-        // When
-        itemService.deleteItem(itemId);
+       assertThat(result).isNotNull();
+       assertThat(result.getId()).isEqualTo(itemId);
+       assertThat(result.getTitle()).isEqualTo("Laptop");
+       verify(itemRepository).findById(itemId);
+   }
 
-        // Then
-        verify(itemRepository).deleteById(itemId);
-    }
+   @Test
+   void getItemById_WithInvalidId_ShouldThrowException() {
+       Long itemId = 999L;
+       when(itemRepository.findById(itemId))
+               .thenReturn(Optional.empty());
+
+       assertThatThrownBy(() -> itemService.getItemById(itemId))
+               .isInstanceOf(RuntimeException.class);
+       verify(itemRepository).findById(itemId);
+   }
+
+   @Test
+   void deleteItem_WithValidId_ShouldDeleteItem() {
+       Long itemId = 1L;
+       doNothing().when(itemRepository).deleteById(itemId);
+
+       itemService.deleteItem(itemId);
+
+       verify(itemRepository).deleteById(itemId);
+   }
 } 

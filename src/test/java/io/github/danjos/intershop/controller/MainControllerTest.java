@@ -79,11 +79,9 @@ class MainControllerTest {
 
     @Test
     void showMainPage_WithSearchQuery_ShouldReturnFilteredResults() throws Exception {
-        // Given
         when(itemService.searchItems("laptop", 1, 10, "NO"))
                 .thenReturn(new PageImpl<>(List.of(laptop), PageRequest.of(0, 10), 1));
 
-        // When & Then http://localhost:8080/?search=lap&action=&sort=NO&pageSize=10
         mockMvc.perform(get("/")
                         .param("search", "laptop"))
                 .andExpect(status().isOk())
@@ -93,11 +91,9 @@ class MainControllerTest {
 
     @Test
     void showMainPage_WithSorting_ShouldReturnSortedResults() throws Exception {
-        // Given
         when(itemService.searchItems("", 1, 10, "ALPHA"))
                 .thenReturn(itemPage);
 
-        // When & Then
         mockMvc.perform(get("/")
                         .param("sort", "ALPHA"))
                 .andExpect(status().isOk())
@@ -107,11 +103,9 @@ class MainControllerTest {
 
     @Test
     void showMainPage_WithPagination_ShouldReturnCorrectPage() throws Exception {
-        // Given
         when(itemService.searchItems("", 2, 10, "NO"))
                 .thenReturn(itemPage);
 
-        // When & Then
         mockMvc.perform(get("/")
                         .param("pageNumber", "2"))
                 .andExpect(status().isOk())
@@ -121,10 +115,8 @@ class MainControllerTest {
 
     @Test
     void showItemPage_WithValidId_ShouldReturnItemView() throws Exception {
-        // Given
         when(itemService.getItemById(1L)).thenReturn(laptop);
 
-        // When & Then
         mockMvc.perform(get("/items/1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("item"))
@@ -133,18 +125,15 @@ class MainControllerTest {
 
     @Test
     void showItemPage_WithInvalidId_ShouldThrowException() throws Exception {
-        // Given
         when(itemService.getItemById(999L))
                 .thenThrow(new NotFoundException("Item with id 999 not found"));
 
-        // When & Then
         mockMvc.perform(get("/items/999"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void addToCart_WithValidItemId_ShouldRedirectToCart() throws Exception {
-        // When & Then
         mockMvc.perform(post("/cart/items/1")
                         .param("action", "plus"))
                 .andExpect(status().is3xxRedirection())
@@ -153,11 +142,9 @@ class MainControllerTest {
 
     @Test
     void addToCart_WithInvalidItemId_ShouldHandleError() throws Exception {
-        // Given
         when(itemService.getItemById(999L))
                 .thenThrow(new NotFoundException("Item with id 999 not found"));
 
-        // When & Then
         mockMvc.perform(post("/items/999/add-to-cart"))
                 .andExpect(status().isNotFound());
     }

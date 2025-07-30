@@ -162,4 +162,4 @@ class ItemServiceIntegrationTest {
        assertThat(firstPage.getTotalPages()).isEqualTo(2);
        assertThat(secondPage.getContent()).hasSize(8);
    }
-} 
+}

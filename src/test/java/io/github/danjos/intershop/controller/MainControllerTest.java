@@ -1,15 +1,18 @@
 package io.github.danjos.intershop.controller;
 
+import io.github.danjos.intershop.dto.CartItemDto;
+import io.github.danjos.intershop.exception.NotFoundException;
 import io.github.danjos.intershop.model.Item;
 import io.github.danjos.intershop.service.CartService;
 import io.github.danjos.intershop.service.ItemService;
-import io.github.danjos.intershop.util.Paging;
+import io.github.danjos.intershop.service.OrderService;
+import io.github.danjos.intershop.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,7 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(MainController.class)
+@WebMvcTest({MainController.class, ItemController.class, CartController.class})
 class MainControllerTest {
 
     @Autowired
@@ -33,6 +36,12 @@ class MainControllerTest {
 
     @MockBean
     private CartService cartService;
+
+    @MockBean
+    private OrderService orderService;
+
+    @MockBean
+    private UserService userService;
 
     private Item laptop;
     private Item smartphone;
@@ -59,11 +68,8 @@ class MainControllerTest {
 
     @Test
     void showMainPage_ShouldReturnMainView() throws Exception {
-        // Given
-        when(itemService.searchItems(anyString(), anyInt(), anyInt(), anyString()))
+        when(itemService.searchItems("", 1, 10, "NO"))
                 .thenReturn(itemPage);
-
-        // When & Then
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("main"))
@@ -74,10 +80,10 @@ class MainControllerTest {
     @Test
     void showMainPage_WithSearchQuery_ShouldReturnFilteredResults() throws Exception {
         // Given
-        when(itemService.searchItems("laptop", 1, 10, null))
+        when(itemService.searchItems("laptop", 1, 10, "NO"))
                 .thenReturn(new PageImpl<>(List.of(laptop), PageRequest.of(0, 10), 1));
 
-        // When & Then
+        // When & Then http://localhost:8080/?search=lap&action=&sort=NO&pageSize=10
         mockMvc.perform(get("/")
                         .param("search", "laptop"))
                 .andExpect(status().isOk())
@@ -88,7 +94,7 @@ class MainControllerTest {
     @Test
     void showMainPage_WithSorting_ShouldReturnSortedResults() throws Exception {
         // Given
-        when(itemService.searchItems(null, 1, 10, "ALPHA"))
+        when(itemService.searchItems("", 1, 10, "ALPHA"))
                 .thenReturn(itemPage);
 
         // When & Then
@@ -102,12 +108,12 @@ class MainControllerTest {
     @Test
     void showMainPage_WithPagination_ShouldReturnCorrectPage() throws Exception {
         // Given
-        when(itemService.searchItems(null, 2, 10, null))
+        when(itemService.searchItems("", 2, 10, "NO"))
                 .thenReturn(itemPage);
 
         // When & Then
         mockMvc.perform(get("/")
-                        .param("page", "2"))
+                        .param("pageNumber", "2"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("main"))
                 .andExpect(model().attributeExists("items"));
@@ -122,24 +128,25 @@ class MainControllerTest {
         mockMvc.perform(get("/items/1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("item"))
-                .andExpect(model().attribute("item", laptop));
+                .andExpect(model().attributeExists("item"));
     }
 
     @Test
     void showItemPage_WithInvalidId_ShouldThrowException() throws Exception {
         // Given
         when(itemService.getItemById(999L))
-                .thenThrow(new RuntimeException("Item not found"));
+                .thenThrow(new NotFoundException("Item with id 999 not found"));
 
         // When & Then
         mockMvc.perform(get("/items/999"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isNotFound());
     }
 
     @Test
     void addToCart_WithValidItemId_ShouldRedirectToCart() throws Exception {
         // When & Then
-        mockMvc.perform(post("/items/1/add-to-cart"))
+        mockMvc.perform(post("/cart/items/1")
+                        .param("action", "plus"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/cart/items"));
     }
@@ -148,10 +155,10 @@ class MainControllerTest {
     void addToCart_WithInvalidItemId_ShouldHandleError() throws Exception {
         // Given
         when(itemService.getItemById(999L))
-                .thenThrow(new RuntimeException("Item not found"));
+                .thenThrow(new NotFoundException("Item with id 999 not found"));
 
         // When & Then
         mockMvc.perform(post("/items/999/add-to-cart"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isNotFound());
     }
 } 

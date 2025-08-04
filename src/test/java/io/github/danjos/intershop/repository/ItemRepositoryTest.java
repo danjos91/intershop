@@ -4,17 +4,19 @@ import io.github.danjos.intershop.model.Item;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.data.domain.Page;
+import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
+@DataR2dbcTest
 @ActiveProfiles("test")
 class ItemRepositoryTest {
 
@@ -27,8 +29,7 @@ class ItemRepositoryTest {
 
    @BeforeEach
    void setUp() {
-       itemRepository.deleteAll();
-
+       // Initialize test data
        laptop = new Item();
        laptop.setTitle("Laptop");
        laptop.setDescription("High performance laptop");
@@ -50,7 +51,10 @@ class ItemRepositoryTest {
        tablet.setStock(8);
        tablet.setImgPath("/images/tablet.jpg");
 
-       itemRepository.saveAll(List.of(laptop, smartphone, tablet));
+       // Clear and save test data
+       itemRepository.deleteAll()
+               .thenMany(itemRepository.saveAll(List.of(laptop, smartphone, tablet)))
+               .blockLast();
    }
 
    @Test
@@ -58,11 +62,13 @@ class ItemRepositoryTest {
        String query = "laptop";
        Pageable pageable = PageRequest.of(0, 10);
 
-       Page<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
+       Flux<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(1);
-       assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
+       StepVerifier.create(result)
+               .assertNext(item -> {
+                   assertThat(item.getTitle()).isEqualTo("Laptop");
+               })
+               .verifyComplete();
    }
 
    @Test
@@ -70,11 +76,13 @@ class ItemRepositoryTest {
        String query = "LAPTOP";
        Pageable pageable = PageRequest.of(0, 10);
 
-       Page<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
+       Flux<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(1);
-       assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
+       StepVerifier.create(result)
+               .assertNext(item -> {
+                   assertThat(item.getTitle()).isEqualTo("Laptop");
+               })
+               .verifyComplete();
    }
 
    @Test
@@ -82,48 +90,50 @@ class ItemRepositoryTest {
        String query = "phone";
        Pageable pageable = PageRequest.of(0, 10);
 
-       Page<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
+       Flux<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(1);
-       assertThat(result.getContent().get(0).getTitle()).isEqualTo("Smartphone");
+       StepVerifier.create(result)
+               .assertNext(item -> {
+                   assertThat(item.getTitle()).isEqualTo("Smartphone");
+               })
+               .verifyComplete();
    }
 
    @Test
-   void findByTitleContainingIgnoreCase_WithNonExistentQuery_ShouldReturnEmptyPage() {
+   void findByTitleContainingIgnoreCase_WithNonExistentQuery_ShouldReturnEmptyFlux() {
        String query = "nonexistent";
        Pageable pageable = PageRequest.of(0, 10);
 
-       Page<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
+       Flux<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).isEmpty();
+       StepVerifier.create(result)
+               .verifyComplete();
    }
 
    @Test
    void findByOrderByTitleAsc_ShouldReturnItemsSortedAlphabetically() {
        Pageable pageable = PageRequest.of(0, 10);
 
-       Page<Item> result = itemRepository.findByOrderByTitleAsc(pageable);
+       Flux<Item> result = itemRepository.findByOrderByTitleAsc(pageable);
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(3);
-       assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
-       assertThat(result.getContent().get(1).getTitle()).isEqualTo("Smartphone");
-       assertThat(result.getContent().get(2).getTitle()).isEqualTo("Tablet");
+       StepVerifier.create(result)
+               .assertNext(item -> assertThat(item.getTitle()).isEqualTo("Laptop"))
+               .assertNext(item -> assertThat(item.getTitle()).isEqualTo("Smartphone"))
+               .assertNext(item -> assertThat(item.getTitle()).isEqualTo("Tablet"))
+               .verifyComplete();
    }
 
    @Test
    void findByOrderByPriceAsc_ShouldReturnItemsSortedByPrice() {
        Pageable pageable = PageRequest.of(0, 10);
 
-       Page<Item> result = itemRepository.findByOrderByPriceAsc(pageable);
+       Flux<Item> result = itemRepository.findByOrderByPriceAsc(pageable);
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(3);
-       assertThat(result.getContent().get(0).getPrice()).isEqualTo(399.99);
-       assertThat(result.getContent().get(1).getPrice()).isEqualTo(599.99);
-       assertThat(result.getContent().get(2).getPrice()).isEqualTo(999.99);
+       StepVerifier.create(result)
+               .assertNext(item -> assertThat(item.getPrice()).isEqualTo(399.99))
+               .assertNext(item -> assertThat(item.getPrice()).isEqualTo(599.99))
+               .assertNext(item -> assertThat(item.getPrice()).isEqualTo(999.99))
+               .verifyComplete();
    }
 
    @Test
@@ -135,43 +145,52 @@ class ItemRepositoryTest {
        newItem.setStock(20);
        newItem.setImgPath("/images/headphones.jpg");
 
-       Item savedItem = itemRepository.save(newItem);
+       Mono<Item> savedItemMono = itemRepository.save(newItem);
 
-       assertThat(savedItem).isNotNull();
-       assertThat(savedItem.getId()).isNotNull();
-       assertThat(savedItem.getTitle()).isEqualTo("Headphones");
-
-       Item foundItem = itemRepository.findById(savedItem.getId()).orElse(null);
-       assertThat(foundItem).isNotNull();
-       assertThat(foundItem.getTitle()).isEqualTo("Headphones");
+       StepVerifier.create(savedItemMono)
+               .assertNext(savedItem -> {
+                   assertThat(savedItem).isNotNull();
+                   assertThat(savedItem.getId()).isNotNull();
+                   assertThat(savedItem.getTitle()).isEqualTo("Headphones");
+               })
+               .verifyComplete();
    }
 
    @Test
    void findById_WithValidId_ShouldReturnItem() {
-       Item savedItem = itemRepository.save(laptop);
+       Item savedItem = itemRepository.save(laptop).block();
 
-       Item foundItem = itemRepository.findById(savedItem.getId()).orElse(null);
+       Mono<Item> foundItemMono = itemRepository.findById(savedItem.getId());
 
-       assertThat(foundItem).isNotNull();
-       assertThat(foundItem.getTitle()).isEqualTo("Laptop");
-       assertThat(foundItem.getPrice()).isEqualTo(999.99);
+       StepVerifier.create(foundItemMono)
+               .assertNext(foundItem -> {
+                   assertThat(foundItem).isNotNull();
+                   assertThat(foundItem.getTitle()).isEqualTo("Laptop");
+                   assertThat(foundItem.getPrice()).isEqualTo(999.99);
+               })
+               .verifyComplete();
    }
 
    @Test
    void findById_WithInvalidId_ShouldReturnEmpty() {
-       var result = itemRepository.findById(999L);
+       Mono<Item> result = itemRepository.findById(999L);
 
-       assertThat(result).isEmpty();
+       StepVerifier.create(result)
+               .verifyComplete();
    }
 
    @Test
    void deleteById_WithValidId_ShouldRemoveItem() {
-       Item savedItem = itemRepository.save(laptop);
+       Item savedItem = itemRepository.save(laptop).block();
        Long itemId = savedItem.getId();
 
-       itemRepository.deleteById(itemId);
+       Mono<Void> deleteResult = itemRepository.deleteById(itemId);
 
-       var result = itemRepository.findById(itemId);
-       assertThat(result).isEmpty();
+       StepVerifier.create(deleteResult)
+               .verifyComplete();
+
+       Mono<Item> foundItem = itemRepository.findById(itemId);
+       StepVerifier.create(foundItem)
+               .verifyComplete();
    }
 } 

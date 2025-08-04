@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.List;
@@ -132,8 +133,8 @@ class CartServiceTest {
    @Test
    void getCartItems_WithItems_ShouldReturnCartItemDtos() {
        when(session.getAttribute("cart")).thenReturn(cart);
-       when(itemService.getItemById(1L)).thenReturn(laptop);
-       when(itemService.getItemById(2L)).thenReturn(smartphone);
+       when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
+       when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
 
        List<CartItemDto> result = cartService.getCartItems(session);
 
@@ -147,8 +148,8 @@ class CartServiceTest {
    @Test
    void getCartTotal_WithItems_ShouldReturnCorrectTotal() {
        when(session.getAttribute("cart")).thenReturn(cart);
-       when(itemService.getItemById(1L)).thenReturn(laptop);
-       when(itemService.getItemById(2L)).thenReturn(smartphone);
+       when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
+       when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
 
        double result = cartService.getCartTotal(session);
 

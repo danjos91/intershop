@@ -36,7 +36,7 @@ public class MainController {
             Model model,
             HttpSession session) {
 
-        Page<Item> mainPage = itemService.searchItems(search, pageNumber, pageSize, sort);
+        Page<Item> mainPage = itemService.searchItems(search, pageNumber, pageSize, sort).block();
         Paging paging = new Paging(pageNumber, pageSize, mainPage.hasNext(), mainPage.hasPrevious());
 
         Map<Long, Integer> cart = cartService.getCart(session);

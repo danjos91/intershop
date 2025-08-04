@@ -19,15 +19,15 @@ public class OrderController {
 
     @GetMapping("/orders")
     public String showOrders(Model model) {
-        User user = userService.getCurrentUser();
-        model.addAttribute("orders", orderService.getUserOrders(user));
+        User user = userService.getCurrentUserBlocking();
+        model.addAttribute("orders", orderService.getUserOrders(user).collectList().block());
         return "orders";
     }
 
     @GetMapping("/orders/{id}")
     public String showOrder(@PathVariable Long id, @RequestParam(required = false) boolean newOrder, Model model) {
 
-        Order order = orderService.getOrderById(id);
+        Order order = orderService.getOrderById(id).block();
         model.addAttribute("order", order);
         model.addAttribute("newOrder", newOrder);
         return "order";

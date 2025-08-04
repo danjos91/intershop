@@ -22,7 +22,7 @@ public class ItemController {
         Map<Long, Integer> cart = cartService.getCart(session);
         int count = cart.getOrDefault(id, 0);
         
-        CartItemDto itemWithCount = new CartItemDto(itemService.getItemById(id), count);
+        CartItemDto itemWithCount = new CartItemDto(itemService.getItemById(id).block(), count);
         model.addAttribute("item", itemWithCount);
         return "item";
     }

@@ -51,8 +51,8 @@ public class CartController {
     @PostMapping("/buy")
     public String createOrder(HttpSession session) {
         Map<Long, Integer> cart = cartService.getCart(session);
-        User user = userService.getCurrentUser();
-        Order order = orderService.createOrderFromCart(cart, user);
+        User user = userService.getCurrentUserBlocking();
+        Order order = orderService.createOrderFromCart(cart, user).block();
 
         session.removeAttribute("cart");
 

@@ -5,6 +5,8 @@ import io.github.danjos.intershop.model.Item;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +53,7 @@ public class CartService {
         Map<Long, Integer> cart = getCartInternal(session);
         return cart.entrySet().stream()
                 .map(entry -> {
-                    Item item = itemService.getItemById(entry.getKey());
+                    Item item = itemService.getItemById(entry.getKey()).block();
                     return new CartItemDto(item, entry.getValue());
                 })
                 .collect(Collectors.toList());
@@ -61,5 +63,23 @@ public class CartService {
         return getCartItems(session).stream()
                 .mapToDouble(item -> item.getPrice() * item.getCount())
                 .sum();
+    }
+
+    public Mono<List<CartItemDto>> getCartItemsReactive(HttpSession session) {
+        Map<Long, Integer> cart = getCartInternal(session);
+        
+        return Flux.fromStream(cart.entrySet().stream())
+                .flatMap(entry -> 
+                    itemService.getItemById(entry.getKey())
+                        .map(item -> new CartItemDto(item, entry.getValue()))
+                )
+                .collectList();
+    }
+
+    public Mono<Double> getCartTotalReactive(HttpSession session) {
+        return getCartItemsReactive(session)
+                .map(cartItems -> cartItems.stream()
+                        .mapToDouble(item -> item.getPrice() * item.getCount())
+                        .sum());
     }
 }

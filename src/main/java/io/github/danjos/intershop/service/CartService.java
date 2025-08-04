@@ -16,14 +16,14 @@ import java.util.stream.Collectors;
 public class CartService {
     private final ItemService itemService;
 
-    public void addItemToCart(Long itemId, HttpSession session) {
-        Map<Long, Integer> cart = getCart(session);
+    public synchronized void addItemToCart(Long itemId, HttpSession session) {
+        Map<Long, Integer> cart = getCartInternal(session);
         cart.put(itemId, cart.getOrDefault(itemId, 0) + 1);
         session.setAttribute("cart", cart);
     }
 
-    public void removeItemFromCart(Long itemId, HttpSession session) {
-        Map<Long, Integer> cart = getCart(session);
+    public synchronized void removeItemFromCart(Long itemId, HttpSession session) {
+        Map<Long, Integer> cart = getCartInternal(session);
         if (cart.containsKey(itemId)) {
             if (cart.get(itemId) > 1) {
                 cart.put(itemId, cart.get(itemId) - 1);
@@ -34,7 +34,19 @@ public class CartService {
         session.setAttribute("cart", cart);
     }
 
-    public Map<Long, Integer> getCart(HttpSession session) {
+    /**
+     * Синхронизированный метод для получения корзины из сессии.
+     * Предотвращает гонку данных между потоками.
+     */
+    public synchronized Map<Long, Integer> getCart(HttpSession session) {
+        return getCartInternal(session);
+    }
+
+    /**
+     * Приватный метод для внутреннего использования в сервисе.
+     * Не синхронизирован, так как вызывается только из синхронизированных методов.
+     */
+    private Map<Long, Integer> getCartInternal(HttpSession session) {
         Map<Long, Integer> cart = (Map<Long, Integer>) session.getAttribute("cart");
         if (cart == null) {
             cart = new HashMap<>();
@@ -44,7 +56,7 @@ public class CartService {
     }
 
     public List<CartItemDto> getCartItems(HttpSession session) {
-        Map<Long, Integer> cart = getCart(session);
+        Map<Long, Integer> cart = getCartInternal(session);
         return cart.entrySet().stream()
                 .map(entry -> {
                     Item item = itemService.getItemById(entry.getKey());

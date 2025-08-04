@@ -1,11 +1,14 @@
 spring:
   application:
     name: intershop
-  datasource:
-    url: jdbc:h2:mem:shopdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL
+  r2dbc:
+    url: r2dbc:h2:mem:///shopdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
     password: ""
-    driver-class-name: org.h2.Driver
+    pool:
+      initial-size: 5
+      max-size: 20
+      max-idle-time: 30m
   h2:
     console:
       enabled: true
@@ -13,14 +16,13 @@ spring:
       settings:
         trace: false
         web-allow-others: false
-  jpa:
-    show-sql: false
-    hibernate:
-      ddl-auto: update # TODO check 'validate' for production-like safety
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.H2Dialect
   sql:
     init:
       mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+
+logging:
+  level:
+    io.r2dbc: DEBUG
+    org.springframework.r2dbc: DEBUG

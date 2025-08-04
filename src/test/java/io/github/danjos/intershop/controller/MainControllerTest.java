@@ -16,6 +16,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.web.servlet.MockMvc;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -69,7 +70,7 @@ class MainControllerTest {
     @Test
     void showMainPage_ShouldReturnMainView() throws Exception {
         when(itemService.searchItems("", 1, 10, "NO"))
-                .thenReturn(itemPage);
+                .thenReturn(Mono.just(itemPage));
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("main"))
@@ -80,7 +81,7 @@ class MainControllerTest {
     @Test
     void showMainPage_WithSearchQuery_ShouldReturnFilteredResults() throws Exception {
         when(itemService.searchItems("laptop", 1, 10, "NO"))
-                .thenReturn(new PageImpl<>(List.of(laptop), PageRequest.of(0, 10), 1));
+                .thenReturn(Mono.just(new PageImpl<>(List.of(laptop), PageRequest.of(0, 10), 1)));
 
         mockMvc.perform(get("/")
                         .param("search", "laptop"))
@@ -92,7 +93,7 @@ class MainControllerTest {
     @Test
     void showMainPage_WithSorting_ShouldReturnSortedResults() throws Exception {
         when(itemService.searchItems("", 1, 10, "ALPHA"))
-                .thenReturn(itemPage);
+                .thenReturn(Mono.just(itemPage));
 
         mockMvc.perform(get("/")
                         .param("sort", "ALPHA"))
@@ -104,7 +105,7 @@ class MainControllerTest {
     @Test
     void showMainPage_WithPagination_ShouldReturnCorrectPage() throws Exception {
         when(itemService.searchItems("", 2, 10, "NO"))
-                .thenReturn(itemPage);
+                .thenReturn(Mono.just(itemPage));
 
         mockMvc.perform(get("/")
                         .param("pageNumber", "2"))
@@ -115,7 +116,7 @@ class MainControllerTest {
 
     @Test
     void showItemPage_WithValidId_ShouldReturnItemView() throws Exception {
-        when(itemService.getItemById(1L)).thenReturn(laptop);
+        when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
 
         mockMvc.perform(get("/items/1"))
                 .andExpect(status().isOk())
@@ -126,7 +127,7 @@ class MainControllerTest {
     @Test
     void showItemPage_WithInvalidId_ShouldThrowException() throws Exception {
         when(itemService.getItemById(999L))
-                .thenThrow(new NotFoundException("Item with id 999 not found"));
+                .thenReturn(Mono.error(new NotFoundException("Item with id 999 not found")));
 
         mockMvc.perform(get("/items/999"))
                 .andExpect(status().isNotFound());
@@ -143,7 +144,7 @@ class MainControllerTest {
     @Test
     void addToCart_WithInvalidItemId_ShouldHandleError() throws Exception {
         when(itemService.getItemById(999L))
-                .thenThrow(new NotFoundException("Item with id 999 not found"));
+                .thenReturn(Mono.error(new NotFoundException("Item with id 999 not found")));
 
         mockMvc.perform(post("/items/999/add-to-cart"))
                 .andExpect(status().isNotFound());

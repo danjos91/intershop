@@ -34,18 +34,10 @@ public class CartService {
         session.setAttribute("cart", cart);
     }
 
-    /**
-     * Синхронизированный метод для получения корзины из сессии.
-     * Предотвращает гонку данных между потоками.
-     */
     public synchronized Map<Long, Integer> getCart(HttpSession session) {
         return getCartInternal(session);
     }
 
-    /**
-     * Приватный метод для внутреннего использования в сервисе.
-     * Не синхронизирован, так как вызывается только из синхронизированных методов.
-     */
     private Map<Long, Integer> getCartInternal(HttpSession session) {
         Map<Long, Integer> cart = (Map<Long, Integer>) session.getAttribute("cart");
         if (cart == null) {

@@ -1,5 +1,6 @@
 package io.github.danjos.intershop.service;
 
+import io.github.danjos.intershop.exception.NotFoundException;
 import io.github.danjos.intershop.model.Item;
 import io.github.danjos.intershop.repository.ItemRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,16 +10,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,75 +59,99 @@ class ItemServiceTest {
    void searchItems_WithQuery_ShouldReturnFilteredResults() {
        String query = "laptop";
        Pageable pageable = PageRequest.of(0, 10);
-       Page<Item> expectedPage = new PageImpl<>(List.of(laptop), pageable, 1);
+       Flux<Item> itemsFlux = Flux.just(laptop);
 
        when(itemRepository.findByTitleContainingIgnoreCase(query, pageable))
-               .thenReturn(expectedPage);
+               .thenReturn(itemsFlux);
 
-       Page<Item> result = itemService.searchItems(query, 1, 10, null);
+       Mono<Page<Item>> resultMono = itemService.searchItems(query, 1, 10, null);
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(1);
-       assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
+       StepVerifier.create(resultMono)
+               .assertNext(page -> {
+                   assertThat(page).isNotNull();
+                   assertThat(page.getContent()).hasSize(1);
+                   assertThat(page.getContent().get(0).getTitle()).isEqualTo("Laptop");
+               })
+               .verifyComplete();
+
        verify(itemRepository).findByTitleContainingIgnoreCase(query, pageable);
    }
 
    @Test
    void searchItems_WithAlphaSort_ShouldReturnSortedResults() {
        Pageable pageable = PageRequest.of(0, 10);
-       Page<Item> expectedPage = new PageImpl<>(items, pageable, 2);
+       Flux<Item> itemsFlux = Flux.fromIterable(items);
 
        when(itemRepository.findByOrderByTitleAsc(pageable))
-               .thenReturn(expectedPage);
+               .thenReturn(itemsFlux);
 
-       Page<Item> result = itemService.searchItems(null, 1, 10, "ALPHA");
+       Mono<Page<Item>> resultMono = itemService.searchItems(null, 1, 10, "ALPHA");
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(2);
+       StepVerifier.create(resultMono)
+               .assertNext(page -> {
+                   assertThat(page).isNotNull();
+                   assertThat(page.getContent()).hasSize(2);
+               })
+               .verifyComplete();
+
        verify(itemRepository).findByOrderByTitleAsc(pageable);
    }
 
    @Test
    void searchItems_WithPriceSort_ShouldReturnSortedResults() {
        Pageable pageable = PageRequest.of(0, 10);
-       Page<Item> expectedPage = new PageImpl<>(items, pageable, 2);
+       Flux<Item> itemsFlux = Flux.fromIterable(items);
 
        when(itemRepository.findByOrderByPriceAsc(pageable))
-               .thenReturn(expectedPage);
+               .thenReturn(itemsFlux);
 
-       Page<Item> result = itemService.searchItems(null, 1, 10, "PRICE");
+       Mono<Page<Item>> resultMono = itemService.searchItems(null, 1, 10, "PRICE");
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(2);
+       StepVerifier.create(resultMono)
+               .assertNext(page -> {
+                   assertThat(page).isNotNull();
+                   assertThat(page.getContent()).hasSize(2);
+               })
+               .verifyComplete();
+
        verify(itemRepository).findByOrderByPriceAsc(pageable);
    }
 
    @Test
    void searchItems_WithoutQueryAndSort_ShouldReturnAllItems() {
-       Pageable pageable = PageRequest.of(0, 10);
-       Page<Item> expectedPage = new PageImpl<>(items, pageable, 2);
+       Flux<Item> itemsFlux = Flux.fromIterable(items);
 
-       when(itemRepository.findAll(pageable))
-               .thenReturn(expectedPage);
+       when(itemRepository.findAll(Sort.by("id")))
+               .thenReturn(itemsFlux);
 
-       Page<Item> result = itemService.searchItems(null, 1, 10, null);
+       Mono<Page<Item>> resultMono = itemService.searchItems(null, 1, 10, null);
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(2);
-       verify(itemRepository).findAll(pageable);
+       StepVerifier.create(resultMono)
+               .assertNext(page -> {
+                   assertThat(page).isNotNull();
+                   assertThat(page.getContent()).hasSize(2);
+               })
+               .verifyComplete();
+
+       verify(itemRepository).findAll(Sort.by("id"));
    }
 
    @Test
    void getItemById_WithValidId_ShouldReturnItem() {
        Long itemId = 1L;
        when(itemRepository.findById(itemId))
-               .thenReturn(Optional.of(laptop));
+               .thenReturn(Mono.just(laptop));
 
-       Item result = itemService.getItemById(itemId);
+       Mono<Item> resultMono = itemService.getItemById(itemId);
 
-       assertThat(result).isNotNull();
-       assertThat(result.getId()).isEqualTo(itemId);
-       assertThat(result.getTitle()).isEqualTo("Laptop");
+       StepVerifier.create(resultMono)
+               .assertNext(item -> {
+                   assertThat(item).isNotNull();
+                   assertThat(item.getId()).isEqualTo(itemId);
+                   assertThat(item.getTitle()).isEqualTo("Laptop");
+               })
+               .verifyComplete();
+
        verify(itemRepository).findById(itemId);
    }
 
@@ -133,19 +159,27 @@ class ItemServiceTest {
    void getItemById_WithInvalidId_ShouldThrowException() {
        Long itemId = 999L;
        when(itemRepository.findById(itemId))
-               .thenReturn(Optional.empty());
+               .thenReturn(Mono.empty());
 
-       assertThatThrownBy(() -> itemService.getItemById(itemId))
-               .isInstanceOf(RuntimeException.class);
+       Mono<Item> resultMono = itemService.getItemById(itemId);
+
+       StepVerifier.create(resultMono)
+               .expectError(NotFoundException.class)
+               .verify();
+
        verify(itemRepository).findById(itemId);
    }
 
    @Test
    void deleteItem_WithValidId_ShouldDeleteItem() {
        Long itemId = 1L;
-       doNothing().when(itemRepository).deleteById(itemId);
+       when(itemRepository.deleteById(itemId))
+               .thenReturn(Mono.empty());
 
-       itemService.deleteItem(itemId);
+       Mono<Void> resultMono = itemService.deleteItem(itemId);
+
+       StepVerifier.create(resultMono)
+               .verifyComplete();
 
        verify(itemRepository).deleteById(itemId);
    }

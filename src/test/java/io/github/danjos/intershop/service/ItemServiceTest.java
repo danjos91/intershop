@@ -58,11 +58,13 @@ class ItemServiceTest {
    @Test
    void searchItems_WithQuery_ShouldReturnFilteredResults() {
        String query = "laptop";
-       Pageable pageable = PageRequest.of(0, 10);
        Flux<Item> itemsFlux = Flux.just(laptop);
+       Mono<Long> countMono = Mono.just(1L);
 
-       when(itemRepository.findByTitleContainingIgnoreCase(query, pageable))
+       when(itemRepository.findByTitleContainingIgnoreCase(query, 10, 0))
                .thenReturn(itemsFlux);
+       when(itemRepository.countByTitleContainingIgnoreCase(query))
+               .thenReturn(countMono);
 
        Mono<Page<Item>> resultMono = itemService.searchItems(query, 1, 10, null);
 
@@ -71,19 +73,23 @@ class ItemServiceTest {
                    assertThat(page).isNotNull();
                    assertThat(page.getContent()).hasSize(1);
                    assertThat(page.getContent().get(0).getTitle()).isEqualTo("Laptop");
+                   assertThat(page.getTotalElements()).isEqualTo(1L);
                })
                .verifyComplete();
 
-       verify(itemRepository).findByTitleContainingIgnoreCase(query, pageable);
+       verify(itemRepository).findByTitleContainingIgnoreCase(query, 10, 0);
+       verify(itemRepository).countByTitleContainingIgnoreCase(query);
    }
 
    @Test
    void searchItems_WithAlphaSort_ShouldReturnSortedResults() {
-       Pageable pageable = PageRequest.of(0, 10);
        Flux<Item> itemsFlux = Flux.fromIterable(items);
+       Mono<Long> countMono = Mono.just(2L);
 
-       when(itemRepository.findByOrderByTitleAsc(pageable))
+       when(itemRepository.findByOrderByTitleAsc(10, 0))
                .thenReturn(itemsFlux);
+       when(itemRepository.countAll())
+               .thenReturn(countMono);
 
        Mono<Page<Item>> resultMono = itemService.searchItems(null, 1, 10, "ALPHA");
 
@@ -91,19 +97,23 @@ class ItemServiceTest {
                .assertNext(page -> {
                    assertThat(page).isNotNull();
                    assertThat(page.getContent()).hasSize(2);
+                   assertThat(page.getTotalElements()).isEqualTo(2L);
                })
                .verifyComplete();
 
-       verify(itemRepository).findByOrderByTitleAsc(pageable);
+       verify(itemRepository).findByOrderByTitleAsc(10, 0);
+       verify(itemRepository).countAll();
    }
 
    @Test
    void searchItems_WithPriceSort_ShouldReturnSortedResults() {
-       Pageable pageable = PageRequest.of(0, 10);
        Flux<Item> itemsFlux = Flux.fromIterable(items);
+       Mono<Long> countMono = Mono.just(2L);
 
-       when(itemRepository.findByOrderByPriceAsc(pageable))
+       when(itemRepository.findByOrderByPriceAsc(10, 0))
                .thenReturn(itemsFlux);
+       when(itemRepository.countAll())
+               .thenReturn(countMono);
 
        Mono<Page<Item>> resultMono = itemService.searchItems(null, 1, 10, "PRICE");
 
@@ -111,18 +121,23 @@ class ItemServiceTest {
                .assertNext(page -> {
                    assertThat(page).isNotNull();
                    assertThat(page.getContent()).hasSize(2);
+                   assertThat(page.getTotalElements()).isEqualTo(2L);
                })
                .verifyComplete();
 
-       verify(itemRepository).findByOrderByPriceAsc(pageable);
+       verify(itemRepository).findByOrderByPriceAsc(10, 0);
+       verify(itemRepository).countAll();
    }
 
    @Test
    void searchItems_WithoutQueryAndSort_ShouldReturnAllItems() {
        Flux<Item> itemsFlux = Flux.fromIterable(items);
+       Mono<Long> countMono = Mono.just(2L);
 
        when(itemRepository.findAll(Sort.by("id")))
                .thenReturn(itemsFlux);
+       when(itemRepository.countAll())
+               .thenReturn(countMono);
 
        Mono<Page<Item>> resultMono = itemService.searchItems(null, 1, 10, null);
 
@@ -130,10 +145,39 @@ class ItemServiceTest {
                .assertNext(page -> {
                    assertThat(page).isNotNull();
                    assertThat(page.getContent()).hasSize(2);
+                   assertThat(page.getTotalElements()).isEqualTo(2L);
                })
                .verifyComplete();
 
        verify(itemRepository).findAll(Sort.by("id"));
+       verify(itemRepository).countAll();
+   }
+
+   @Test
+   void searchItems_WithPagination_ShouldReturnCorrectPage() {
+       String query = "laptop";
+       Flux<Item> itemsFlux = Flux.just(laptop);
+       Mono<Long> countMono = Mono.just(1L);
+
+       when(itemRepository.findByTitleContainingIgnoreCase(query, 5, 5))
+               .thenReturn(itemsFlux);
+       when(itemRepository.countByTitleContainingIgnoreCase(query))
+               .thenReturn(countMono);
+
+       Mono<Page<Item>> resultMono = itemService.searchItems(query, 2, 5, null);
+
+       StepVerifier.create(resultMono)
+               .assertNext(page -> {
+                   assertThat(page).isNotNull();
+                   assertThat(page.getContent()).hasSize(1);
+                   assertThat(page.getTotalElements()).isEqualTo(1L);
+                   assertThat(page.getNumber()).isEqualTo(1); // page 2 (0-indexed)
+                   assertThat(page.getSize()).isEqualTo(5);
+               })
+               .verifyComplete();
+
+       verify(itemRepository).findByTitleContainingIgnoreCase(query, 5, 5);
+       verify(itemRepository).countByTitleContainingIgnoreCase(query);
    }
 
    @Test

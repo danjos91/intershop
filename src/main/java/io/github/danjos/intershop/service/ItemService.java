@@ -22,20 +22,32 @@ public class ItemService {
     @Transactional(readOnly = true)
     public Mono<Page<Item>> searchItems(String query, int pageNumber, int pageSize, String sort) {
         Pageable pageable = PageRequest.of(pageNumber - 1, pageSize);
+        int limit = pageable.getPageSize();
+        int offset = (int) pageable.getOffset();
         
         Flux<Item> itemsFlux;
+        Mono<Long> totalCountMono;
+        
         if (query != null && !query.isEmpty()) {
-            itemsFlux = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
+            itemsFlux = itemRepository.findByTitleContainingIgnoreCase(query, limit, offset);
+            totalCountMono = itemRepository.countByTitleContainingIgnoreCase(query);
         } else if ("ALPHA".equals(sort)) {
-            itemsFlux = itemRepository.findByOrderByTitleAsc(pageable);
+            itemsFlux = itemRepository.findByOrderByTitleAsc(limit, offset);
+            totalCountMono = itemRepository.countAll();
         } else if ("PRICE".equals(sort)) {
-            itemsFlux = itemRepository.findByOrderByPriceAsc(pageable);
+            itemsFlux = itemRepository.findByOrderByPriceAsc(limit, offset);
+            totalCountMono = itemRepository.countAll();
         } else {
             itemsFlux = itemRepository.findAll(Sort.by("id"));
+            totalCountMono = itemRepository.countAll();
         }
         
-        return itemsFlux.collectList()
-                .map(items -> new PageImpl<>(items, pageable, items.size()));
+        return Mono.zip(itemsFlux.collectList(), totalCountMono)
+                .map(tuple -> {
+                    var items = tuple.getT1();
+                    var total = tuple.getT2();
+                    return new PageImpl<>(items, pageable, total);
+                });
     }
 
     public Mono<Item> getItemById(Long id) {

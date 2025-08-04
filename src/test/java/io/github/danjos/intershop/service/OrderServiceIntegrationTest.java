@@ -10,9 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -26,7 +24,6 @@ import static org.assertj.core.api.Assertions.within;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Transactional
 class OrderServiceIntegrationTest {
 
     @Autowired
@@ -34,9 +31,6 @@ class OrderServiceIntegrationTest {
 
     @Autowired
     private OrderRepository orderRepository;
-
-    @Autowired
-    private UserRepository userRepository;
 
     @Autowired
     private ItemRepository itemRepository;
@@ -48,19 +42,15 @@ class OrderServiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Clear repositories that have deleteAll method
         orderRepository.deleteAll()
                 .then(itemRepository.deleteAll())
                 .block();
 
-        // Create and save user (or use existing one)
         user = new User();
         user.setUsername("testuser");
         user.setPassword("password123");
         user.setEmail("test@example.com");
-        // Note: We'll use the user object directly without saving to avoid repository issues
 
-        // Create and save laptop
         laptop = new Item();
         laptop.setTitle("Laptop");
         laptop.setDescription("High performance laptop");
@@ -69,7 +59,6 @@ class OrderServiceIntegrationTest {
         laptop.setImgPath("/images/laptop.jpg");
         laptop = itemRepository.save(laptop).block();
 
-        // Create and save smartphone
         smartphone = new Item();
         smartphone.setTitle("Smartphone");
         smartphone.setDescription("Latest smartphone model");
@@ -78,7 +67,6 @@ class OrderServiceIntegrationTest {
         smartphone.setImgPath("/images/smartphone.jpg");
         smartphone = itemRepository.save(smartphone).block();
 
-        // Setup cart items
         cartItems = new HashMap<>();
         cartItems.put(laptop.getId(), 2);
         cartItems.put(smartphone.getId(), 1);
@@ -99,7 +87,6 @@ class OrderServiceIntegrationTest {
                 })
                 .verifyComplete();
 
-        // Verify order is saved in repository
         Flux<Order> savedOrders = orderRepository.findByUserId(user.getId());
         StepVerifier.create(savedOrders)
                 .assertNext(savedOrder -> {
@@ -112,7 +99,7 @@ class OrderServiceIntegrationTest {
     @Test
     void createOrderFromCart_EmptyCart_ShouldCreateEmptyOrder() {
         Map<Long, Integer> emptyCart = new HashMap<>();
-        
+
         Mono<Order> resultMono = orderService.createOrderFromCart(emptyCart, user);
 
         StepVerifier.create(resultMono)
@@ -127,10 +114,8 @@ class OrderServiceIntegrationTest {
 
     @Test
     void getUserOrders_WithValidUser_ShouldReturnOrders() {
-        // Create first order
         Order order1 = orderService.createOrderFromCart(cartItems, user).block();
-        
-        // Create second order
+
         Map<Long, Integer> cartItems2 = new HashMap<>();
         cartItems2.put(laptop.getId(), 1);
         Order order2 = orderService.createOrderFromCart(cartItems2, user).block();

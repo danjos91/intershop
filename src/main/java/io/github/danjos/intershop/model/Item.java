@@ -1,19 +1,17 @@
 package io.github.danjos.intershop.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 import lombok.Data;
 
-@Entity
-@Table(name = "items")
+@Table("items")
 @Data
 public class Item {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String title;
     private String description;
     private double price;
     private String imgPath;
     private int stock;
-
 }

@@ -1,7 +1,6 @@
 package io.github.danjos.intershop.repository;
 
 import io.github.danjos.intershop.model.User;
-import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveSortingRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;

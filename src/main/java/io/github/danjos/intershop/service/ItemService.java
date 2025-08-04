@@ -5,11 +5,14 @@ import io.github.danjos.intershop.model.Item;
 import io.github.danjos.intershop.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -17,26 +20,30 @@ public class ItemService {
     private final ItemRepository itemRepository;
 
     @Transactional(readOnly = true)
-    public Page<Item> searchItems(String query, int pageNumber, int pageSize, String sort) {
+    public Mono<Page<Item>> searchItems(String query, int pageNumber, int pageSize, String sort) {
         Pageable pageable = PageRequest.of(pageNumber - 1, pageSize);
+        
+        Flux<Item> itemsFlux;
         if (query != null && !query.isEmpty()) {
-            return itemRepository.findByTitleContainingIgnoreCase(query, pageable);
+            itemsFlux = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
+        } else if ("ALPHA".equals(sort)) {
+            itemsFlux = itemRepository.findByOrderByTitleAsc(pageable);
+        } else if ("PRICE".equals(sort)) {
+            itemsFlux = itemRepository.findByOrderByPriceAsc(pageable);
+        } else {
+            itemsFlux = itemRepository.findAll(Sort.by("id"));
         }
-        if ("ALPHA".equals(sort)) {
-            return itemRepository.findByOrderByTitleAsc(pageable);
-        }
-        if ("PRICE".equals(sort)) {
-            return itemRepository.findByOrderByPriceAsc(pageable);
-        }
-        return itemRepository.findAll(pageable);
+        
+        return itemsFlux.collectList()
+                .map(items -> new PageImpl<>(items, pageable, items.size()));
     }
 
-    public Item getItemById(Long id) {
+    public Mono<Item> getItemById(Long id) {
         return itemRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Item with id " + id + " not found"));
+                .switchIfEmpty(Mono.error(new NotFoundException("Item with id " + id + " not found")));
     }
 
-    public void deleteItem(Long id) {
-        itemRepository.deleteById(id);
+    public Mono<Void> deleteItem(Long id) {
+        return itemRepository.deleteById(id);
     }
 }

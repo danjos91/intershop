@@ -26,10 +26,14 @@ class ItemRepositoryTest {
    private Item laptop;
    private Item smartphone;
    private Item tablet;
+   private int limit;
+   private int offset;
 
    @BeforeEach
    void setUp() {
-       // Initialize test data
+       limit = 10;
+       offset = 0;
+
        laptop = new Item();
        laptop.setTitle("Laptop");
        laptop.setDescription("High performance laptop");
@@ -60,9 +64,8 @@ class ItemRepositoryTest {
    @Test
    void findByTitleContainingIgnoreCase_WithValidQuery_ShouldReturnMatchingItems() {
        String query = "laptop";
-       Pageable pageable = PageRequest.of(0, 10);
 
-       Flux<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
+       Flux<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, limit, offset);
 
        StepVerifier.create(result)
                .assertNext(item -> {
@@ -74,9 +77,8 @@ class ItemRepositoryTest {
    @Test
    void findByTitleContainingIgnoreCase_WithCaseInsensitiveQuery_ShouldReturnMatchingItems() {
        String query = "LAPTOP";
-       Pageable pageable = PageRequest.of(0, 10);
 
-       Flux<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
+       Flux<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, limit, offset);
 
        StepVerifier.create(result)
                .assertNext(item -> {
@@ -88,9 +90,8 @@ class ItemRepositoryTest {
    @Test
    void findByTitleContainingIgnoreCase_WithPartialQuery_ShouldReturnMatchingItems() {
        String query = "phone";
-       Pageable pageable = PageRequest.of(0, 10);
 
-       Flux<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
+       Flux<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, limit, offset);
 
        StepVerifier.create(result)
                .assertNext(item -> {
@@ -102,9 +103,8 @@ class ItemRepositoryTest {
    @Test
    void findByTitleContainingIgnoreCase_WithNonExistentQuery_ShouldReturnEmptyFlux() {
        String query = "nonexistent";
-       Pageable pageable = PageRequest.of(0, 10);
 
-       Flux<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, pageable);
+       Flux<Item> result = itemRepository.findByTitleContainingIgnoreCase(query, limit, offset);
 
        StepVerifier.create(result)
                .verifyComplete();
@@ -112,9 +112,7 @@ class ItemRepositoryTest {
 
    @Test
    void findByOrderByTitleAsc_ShouldReturnItemsSortedAlphabetically() {
-       Pageable pageable = PageRequest.of(0, 10);
-
-       Flux<Item> result = itemRepository.findByOrderByTitleAsc(pageable);
+       Flux<Item> result = itemRepository.findByOrderByTitleAsc(limit, offset);
 
        StepVerifier.create(result)
                .assertNext(item -> assertThat(item.getTitle()).isEqualTo("Laptop"))
@@ -125,9 +123,7 @@ class ItemRepositoryTest {
 
    @Test
    void findByOrderByPriceAsc_ShouldReturnItemsSortedByPrice() {
-       Pageable pageable = PageRequest.of(0, 10);
-
-       Flux<Item> result = itemRepository.findByOrderByPriceAsc(pageable);
+       Flux<Item> result = itemRepository.findByOrderByPriceAsc(limit, offset);
 
        StepVerifier.create(result)
                .assertNext(item -> assertThat(item.getPrice()).isEqualTo(399.99))

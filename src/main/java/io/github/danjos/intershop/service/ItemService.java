@@ -38,7 +38,7 @@ public class ItemService {
             itemsFlux = itemRepository.findByOrderByPriceAsc(limit, offset);
             totalCountMono = itemRepository.countAll();
         } else {
-            itemsFlux = itemRepository.findAll(Sort.by("id"));
+            itemsFlux = itemRepository.findAllByOrderByIdAsc(limit, offset);
             totalCountMono = itemRepository.countAll();
         }
         

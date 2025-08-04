@@ -21,6 +21,9 @@ public interface ItemRepository extends R2dbcRepository<Item, Long> {
     @Query("SELECT * FROM items ORDER BY price ASC LIMIT :limit OFFSET :offset")
     Flux<Item> findByOrderByPriceAsc(int limit, int offset);
 
+    @Query("SELECT * FROM items ORDER BY id ASC LIMIT :limit OFFSET :offset")
+    Flux<Item> findAllByOrderByIdAsc(int limit, int offset);
+
     @Query("SELECT COUNT(*) FROM items")
     Mono<Long> countAll();
 }

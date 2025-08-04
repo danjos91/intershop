@@ -71,18 +71,21 @@ class ItemServiceIntegrationTest {
                     assertThat(result).isNotNull();
                     assertThat(result.getContent()).hasSize(1);
                     assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
+                    assertThat(result.getTotalElements()).isEqualTo(1L);
                 })
                 .verifyComplete();
     }
 
     @Test
-    void searchItems_WithoutQueryAndSort_ShouldReturnAllItems() {
+    void searchItems_WithoutQueryAndSort_ShouldReturnPaginatedResults() {
         Mono<Page<Item>> resultMono = itemService.searchItems(null, 1, 10, null);
 
         StepVerifier.create(resultMono)
                 .assertNext(result -> {
                     assertThat(result).isNotNull();
                     assertThat(result.getContent()).hasSize(3);
+                    assertThat(result.getTotalElements()).isEqualTo(3L);
+                    assertThat(result.getTotalPages()).isEqualTo(1);
                 })
                 .verifyComplete();
     }
@@ -95,6 +98,7 @@ class ItemServiceIntegrationTest {
                 .assertNext(result -> {
                     assertThat(result).isNotNull();
                     assertThat(result.getContent()).hasSize(3);
+                    assertThat(result.getTotalElements()).isEqualTo(3L);
                     // Check if items are sorted alphabetically
                     List<Item> items = result.getContent();
                     assertThat(items.get(0).getTitle()).isEqualTo("Laptop");
@@ -112,6 +116,7 @@ class ItemServiceIntegrationTest {
                 .assertNext(result -> {
                     assertThat(result).isNotNull();
                     assertThat(result.getContent()).hasSize(3);
+                    assertThat(result.getTotalElements()).isEqualTo(3L);
                     // Check if items are sorted by price
                     List<Item> items = result.getContent();
                     assertThat(items.get(0).getPrice()).isLessThanOrEqualTo(items.get(1).getPrice());
@@ -129,6 +134,7 @@ class ItemServiceIntegrationTest {
                     assertThat(result).isNotNull();
                     assertThat(result.getContent()).hasSize(1);
                     assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
+                    assertThat(result.getTotalElements()).isEqualTo(1L);
                 })
                 .verifyComplete();
     }
@@ -142,6 +148,7 @@ class ItemServiceIntegrationTest {
                     assertThat(result).isNotNull();
                     assertThat(result.getContent()).hasSize(1);
                     assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
+                    assertThat(result.getTotalElements()).isEqualTo(1L);
                 })
                 .verifyComplete();
     }
@@ -187,6 +194,9 @@ class ItemServiceIntegrationTest {
 
     @Test
     void searchItems_WithPagination_ShouldReturnCorrectPage() {
+        // Clear existing data and add more items for pagination test
+        itemRepository.deleteAll().block();
+        
         for (int i = 0; i < 15; i++) {
             Item item = new Item();
             item.setTitle("Item " + i);
@@ -203,14 +213,18 @@ class ItemServiceIntegrationTest {
         StepVerifier.create(firstPageMono)
                 .assertNext(firstPage -> {
                     assertThat(firstPage.getContent()).hasSize(10);
-                    assertThat(firstPage.getTotalElements()).isEqualTo(18);
+                    assertThat(firstPage.getTotalElements()).isEqualTo(15);
                     assertThat(firstPage.getTotalPages()).isEqualTo(2);
+                    assertThat(firstPage.getNumber()).isEqualTo(0);
                 })
                 .verifyComplete();
 
         StepVerifier.create(secondPageMono)
                 .assertNext(secondPage -> {
-                    assertThat(secondPage.getContent()).hasSize(8);
+                    assertThat(secondPage.getContent()).hasSize(5);
+                    assertThat(secondPage.getTotalElements()).isEqualTo(15);
+                    assertThat(secondPage.getTotalPages()).isEqualTo(2);
+                    assertThat(secondPage.getNumber()).isEqualTo(1);
                 })
                 .verifyComplete();
     }

@@ -41,8 +41,11 @@ public class CartService {
     }
 
     private Map<Long, Integer> getCartInternal(HttpSession session) {
-        Map<Long, Integer> cart = (Map<Long, Integer>) session.getAttribute("cart");
-        if (cart == null) {
+        Object cartAttribute = session.getAttribute("cart");
+        Map<Long, Integer> cart;
+        if (cartAttribute instanceof Map) {
+            cart = (Map<Long, Integer>) cartAttribute;
+        } else {
             cart = new HashMap<>();
             session.setAttribute("cart", cart);
         }

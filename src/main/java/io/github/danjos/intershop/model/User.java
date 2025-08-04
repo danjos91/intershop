@@ -1,21 +1,20 @@
 package io.github.danjos.intershop.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "users")
+@Table("users")
 @Data
 public class User {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
     private Long id;
     private String username;
     private String password;
     private String email;
 
-    @OneToMany(mappedBy = "user")
-    private List<Order> orders = new ArrayList<>();
+    private transient List<Order> orders = new ArrayList<>();
 }

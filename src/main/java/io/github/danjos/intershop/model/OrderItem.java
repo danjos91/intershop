@@ -1,22 +1,21 @@
 package io.github.danjos.intershop.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 import lombok.Data;
 
-@Entity
-@Table(name = "order_items")
+@Table("order_items")
 @Data
 public class OrderItem {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    private Order order;
-
-    @ManyToOne
-    private Item item;
+    private Long orderId;
+    private Long itemId;
 
     private int quantity;
     private double price;
+
+    private transient Order order;
+    private transient Item item;
 }

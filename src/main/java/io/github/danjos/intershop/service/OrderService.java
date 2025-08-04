@@ -19,7 +19,7 @@ public class OrderService {
 
     public Mono<Order> createOrderFromCart(Map<Long, Integer> cartItems, User user) {
         Order order = new Order();
-        order.setUser(user);
+        order.setUserId(user.getId());
         order.setOrderDate(LocalDateTime.now());
         order.setStatus("PROCESSING");
 
@@ -28,10 +28,11 @@ public class OrderService {
                     itemService.getItemById(entry.getKey())
                         .map(item -> {
                             OrderItem orderItem = new OrderItem();
-                            orderItem.setItem(item);
+                            orderItem.setItemId(item.getId());
                             orderItem.setQuantity(entry.getValue());
                             orderItem.setPrice(item.getPrice());
                             orderItem.setOrder(order);
+                            orderItem.setItem(item);
                             return orderItem;
                         })
                 )
@@ -43,7 +44,7 @@ public class OrderService {
     }
 
     public Flux<Order> getUserOrders(User user) {
-        return orderRepository.findByUser(user);
+        return orderRepository.findByUserId(user.getId());
     }
 
     public Mono<Order> getOrderById(Long id) {

@@ -1,28 +1,25 @@
 package io.github.danjos.intershop.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "orders")
+@Table("orders")
 @Data
 public class Order {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    private User user;
-
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
-    private List<OrderItem> items = new ArrayList<>();
+    private Long userId;
 
     private LocalDateTime orderDate;
     private String status;
+
+    private transient List<OrderItem> items = new ArrayList<>();
 
     public double getTotalSum() {
         return items.stream().mapToDouble(oi -> oi.getPrice() * oi.getQuantity()).sum();

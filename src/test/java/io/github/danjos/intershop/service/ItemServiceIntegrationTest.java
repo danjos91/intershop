@@ -9,6 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.util.List;
 
@@ -31,8 +33,6 @@ class ItemServiceIntegrationTest {
 
    @BeforeEach
    void setUp() {
-       itemRepository.deleteAll();
-
        laptop = new Item();
        laptop.setTitle("Laptop");
        laptop.setDescription("High performance laptop");
@@ -54,93 +54,129 @@ class ItemServiceIntegrationTest {
        tablet.setStock(8);
        tablet.setImgPath("/images/tablet.jpg");
 
-       itemRepository.saveAll(List.of(laptop, smartphone, tablet));
+       itemRepository.deleteAll()
+               .thenMany(itemRepository.saveAll(List.of(laptop, smartphone, tablet)))
+               .blockLast();
    }
 
    @Test
    void searchItems_WithQuery_ShouldReturnFilteredResults() {
-       Page<Item> result = itemService.searchItems("laptop", 1, 10, null);
+       Mono<Page<Item>> resultMono = itemService.searchItems("laptop", 1, 10, null);
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(1);
-       assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
+       StepVerifier.create(resultMono)
+               .assertNext(result -> {
+                   assertThat(result).isNotNull();
+                   assertThat(result.getContent()).hasSize(1);
+                   assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
+               })
+               .verifyComplete();
    }
 
    @Test
    void searchItems_WithCaseInsensitiveQuery_ShouldReturnResults() {
-       Page<Item> result = itemService.searchItems("LAPTOP", 1, 10, null);
+       Mono<Page<Item>> resultMono = itemService.searchItems("LAPTOP", 1, 10, null);
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(1);
-       assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
+       StepVerifier.create(resultMono)
+               .assertNext(result -> {
+                   assertThat(result).isNotNull();
+                   assertThat(result.getContent()).hasSize(1);
+                   assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
+               })
+               .verifyComplete();
    }
 
    @Test
    void searchItems_WithPartialQuery_ShouldReturnResults() {
-       Page<Item> result = itemService.searchItems("phone", 1, 10, null);
+       Mono<Page<Item>> resultMono = itemService.searchItems("phone", 1, 10, null);
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(1);
-       assertThat(result.getContent().get(0).getTitle()).isEqualTo("Smartphone");
+       StepVerifier.create(resultMono)
+               .assertNext(result -> {
+                   assertThat(result).isNotNull();
+                   assertThat(result.getContent()).hasSize(1);
+                   assertThat(result.getContent().get(0).getTitle()).isEqualTo("Smartphone");
+               })
+               .verifyComplete();
    }
 
    @Test
    void searchItems_WithAlphaSort_ShouldReturnSortedResults() {
-       Page<Item> result = itemService.searchItems(null, 1, 10, "ALPHA");
+       Mono<Page<Item>> resultMono = itemService.searchItems(null, 1, 10, "ALPHA");
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(3);
-       assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
-       assertThat(result.getContent().get(1).getTitle()).isEqualTo("Smartphone");
-       assertThat(result.getContent().get(2).getTitle()).isEqualTo("Tablet");
+       StepVerifier.create(resultMono)
+               .assertNext(result -> {
+                   assertThat(result).isNotNull();
+                   assertThat(result.getContent()).hasSize(3);
+                   assertThat(result.getContent().get(0).getTitle()).isEqualTo("Laptop");
+                   assertThat(result.getContent().get(1).getTitle()).isEqualTo("Smartphone");
+                   assertThat(result.getContent().get(2).getTitle()).isEqualTo("Tablet");
+               })
+               .verifyComplete();
    }
 
    @Test
    void searchItems_WithPriceSort_ShouldReturnSortedResults() {
-       Page<Item> result = itemService.searchItems(null, 1, 10, "PRICE");
+       Mono<Page<Item>> resultMono = itemService.searchItems(null, 1, 10, "PRICE");
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(3);
-       assertThat(result.getContent().get(0).getPrice()).isEqualTo(399.99);
-       assertThat(result.getContent().get(1).getPrice()).isEqualTo(599.99);
-       assertThat(result.getContent().get(2).getPrice()).isEqualTo(999.99);
+       StepVerifier.create(resultMono)
+               .assertNext(result -> {
+                   assertThat(result).isNotNull();
+                   assertThat(result.getContent()).hasSize(3);
+                   assertThat(result.getContent().get(0).getPrice()).isEqualTo(399.99);
+                   assertThat(result.getContent().get(1).getPrice()).isEqualTo(599.99);
+                   assertThat(result.getContent().get(2).getPrice()).isEqualTo(999.99);
+               })
+               .verifyComplete();
    }
 
    @Test
    void searchItems_WithoutQueryAndSort_ShouldReturnAllItems() {
-       Page<Item> result = itemService.searchItems(null, 1, 10, null);
+       Mono<Page<Item>> resultMono = itemService.searchItems(null, 1, 10, null);
 
-       assertThat(result).isNotNull();
-       assertThat(result.getContent()).hasSize(3);
+       StepVerifier.create(resultMono)
+               .assertNext(result -> {
+                   assertThat(result).isNotNull();
+                   assertThat(result.getContent()).hasSize(3);
+               })
+               .verifyComplete();
    }
 
    @Test
    void getItemById_WithValidId_ShouldReturnItem() {
-       Item savedItem = itemRepository.save(laptop);
+       Item savedItem = itemRepository.save(laptop).block();
 
-       Item result = itemService.getItemById(savedItem.getId());
+       Mono<Item> resultMono = itemService.getItemById(savedItem.getId());
 
-       assertThat(result).isNotNull();
-       assertThat(result.getId()).isEqualTo(savedItem.getId());
-       assertThat(result.getTitle()).isEqualTo("Laptop");
+       StepVerifier.create(resultMono)
+               .assertNext(result -> {
+                   assertThat(result).isNotNull();
+                   assertThat(result.getId()).isEqualTo(savedItem.getId());
+                   assertThat(result.getTitle()).isEqualTo("Laptop");
+               })
+               .verifyComplete();
    }
 
    @Test
    void getItemById_WithInvalidId_ShouldThrowException() {
-       org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () -> {
-           itemService.getItemById(999L);
-       });
+       Mono<Item> resultMono = itemService.getItemById(999L);
+
+       StepVerifier.create(resultMono)
+               .expectError(RuntimeException.class)
+               .verify();
    }
 
    @Test
    void deleteItem_WithValidId_ShouldDeleteItem() {
-       Item savedItem = itemRepository.save(laptop);
+       Item savedItem = itemRepository.save(laptop).block();
        Long itemId = savedItem.getId();
 
-       itemService.deleteItem(itemId);
+       Mono<Void> deleteResult = itemService.deleteItem(itemId);
 
-       var result = itemRepository.findById(itemId);
-       assertThat(result).isEmpty();
+       StepVerifier.create(deleteResult)
+               .verifyComplete();
+
+       Mono<Item> foundItem = itemRepository.findById(itemId);
+       StepVerifier.create(foundItem)
+               .verifyComplete();
    }
 
    @Test
@@ -151,15 +187,24 @@ class ItemServiceIntegrationTest {
            item.setDescription("Description " + i);
            item.setPrice(100.0 + i);
            item.setStock(5);
-           itemRepository.save(item);
+           itemRepository.save(item).block();
        }
 
-       Page<Item> firstPage = itemService.searchItems(null, 1, 10, null);
-       Page<Item> secondPage = itemService.searchItems(null, 2, 10, null);
+       Mono<Page<Item>> firstPageMono = itemService.searchItems(null, 1, 10, null);
+       Mono<Page<Item>> secondPageMono = itemService.searchItems(null, 2, 10, null);
 
-       assertThat(firstPage.getContent()).hasSize(10);
-       assertThat(firstPage.getTotalElements()).isEqualTo(18);
-       assertThat(firstPage.getTotalPages()).isEqualTo(2);
-       assertThat(secondPage.getContent()).hasSize(8);
+       StepVerifier.create(firstPageMono)
+               .assertNext(firstPage -> {
+                   assertThat(firstPage.getContent()).hasSize(10);
+                   assertThat(firstPage.getTotalElements()).isEqualTo(18);
+                   assertThat(firstPage.getTotalPages()).isEqualTo(2);
+               })
+               .verifyComplete();
+
+       StepVerifier.create(secondPageMono)
+               .assertNext(secondPage -> {
+                   assertThat(secondPage.getContent()).hasSize(8);
+               })
+               .verifyComplete();
    }
 }

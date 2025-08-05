@@ -35,7 +35,7 @@
         <p>
             <span th:text="${item.description}"></span>
         </p>
-        <form th:action="${'/items/'+item.id}" method="post">
+        <form th:action="${'/items/order/'+item.id}" method="get">
             <button name="action" value="minus">-</button>
             <span th:text="${item.count}"></span>
             <button name="action" value="plus">+</button>

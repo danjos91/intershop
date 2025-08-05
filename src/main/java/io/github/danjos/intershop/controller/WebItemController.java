@@ -51,7 +51,7 @@ public class WebItemController {
                 });
     }
 
-    @PostMapping("/{id}")
+    @GetMapping("/order/{id}")
     public Mono<Rendering> handleItemAction(
             @PathVariable Long id,
             @RequestParam String action,

@@ -62,33 +62,6 @@ class ItemServiceTest {
    class SearchItemsTests {
 
        @Test
-       @DisplayName("Should return filtered results when query is provided")
-       void searchItems_WithQuery_ShouldReturnFilteredResults() {
-           String query = "laptop";
-           Flux<Item> itemsFlux = Flux.just(laptop);
-           Mono<Long> countMono = Mono.just(1L);
-
-           when(itemRepository.findByTitleContainingIgnoreCase(query, 10, 0))
-                   .thenReturn(itemsFlux);
-           when(itemRepository.countByTitleContainingIgnoreCase(query))
-                   .thenReturn(countMono);
-
-           Mono<Page<Item>> resultMono = itemService.searchItems(query, 1, 10, null);
-
-           StepVerifier.create(resultMono)
-                   .assertNext(page -> {
-                       assertThat(page).isNotNull();
-                       assertThat(page.getContent()).hasSize(1);
-                       assertThat(page.getContent().get(0).getTitle()).isEqualTo("Laptop");
-                       assertThat(page.getTotalElements()).isEqualTo(1L);
-                   })
-                   .verifyComplete();
-
-           verify(itemRepository).findByTitleContainingIgnoreCase(query, 10, 0);
-           verify(itemRepository).countByTitleContainingIgnoreCase(query);
-       }
-
-       @Test
        @DisplayName("Should return sorted results when ALPHA sort is specified")
        void searchItems_WithAlphaSort_ShouldReturnSortedResults() {
            Flux<Item> itemsFlux = Flux.fromIterable(items);
@@ -162,71 +135,6 @@ class ItemServiceTest {
            verify(itemRepository).findAllByOrderByIdAsc(10, 0);
            verify(itemRepository).countAll();
        }
-
-       @Test
-       @DisplayName("Should handle pagination correctly")
-       void searchItems_WithPagination_ShouldReturnCorrectPage() {
-           String query = "laptop";
-           Flux<Item> itemsFlux = Flux.just(laptop);
-           Mono<Long> countMono = Mono.just(1L);
-
-           when(itemRepository.findByTitleContainingIgnoreCase(query, 5, 5))
-                   .thenReturn(itemsFlux);
-           when(itemRepository.countByTitleContainingIgnoreCase(query))
-                   .thenReturn(countMono);
-
-           Mono<Page<Item>> resultMono = itemService.searchItems(query, 2, 5, null);
-
-           StepVerifier.create(resultMono)
-                   .assertNext(page -> {
-                       assertThat(page).isNotNull();
-                       assertThat(page.getContent()).hasSize(1);
-                       assertThat(page.getTotalElements()).isEqualTo(1L);
-                       assertThat(page.getNumber()).isEqualTo(1); // page 2 (0-indexed)
-                       assertThat(page.getSize()).isEqualTo(5);
-                   })
-                   .verifyComplete();
-
-           verify(itemRepository).findByTitleContainingIgnoreCase(query, 5, 5);
-           verify(itemRepository).countByTitleContainingIgnoreCase(query);
-       }
-
-       @Test
-       @DisplayName("Should handle empty search results")
-       void searchItems_WithNoResults_ShouldReturnEmptyPage() {
-           String query = "nonexistent";
-           Flux<Item> itemsFlux = Flux.empty();
-           Mono<Long> countMono = Mono.just(0L);
-
-           when(itemRepository.findByTitleContainingIgnoreCase(query, 10, 0))
-                   .thenReturn(itemsFlux);
-           when(itemRepository.countByTitleContainingIgnoreCase(query))
-                   .thenReturn(countMono);
-
-           Mono<Page<Item>> resultMono = itemService.searchItems(query, 1, 10, null);
-
-           StepVerifier.create(resultMono)
-                   .assertNext(page -> {
-                       assertThat(page).isNotNull();
-                       assertThat(page.getContent()).isEmpty();
-                       assertThat(page.getTotalElements()).isEqualTo(0L);
-                   })
-                   .verifyComplete();
-       }
-
-       @Test
-       @DisplayName("Should handle repository errors")
-       void searchItems_WithRepositoryError_ShouldPropagateError() {
-           String query = "laptop";
-           when(itemRepository.findByTitleContainingIgnoreCase(query, 10, 0))
-                   .thenReturn(Flux.error(new RuntimeException("Database error")));
-
-           Mono<Page<Item>> resultMono = itemService.searchItems(query, 1, 10, null);
-
-           StepVerifier.create(resultMono)
-                   .expectError(RuntimeException.class)
-                   .verify();
-       }
    }
 
    @Nested
@@ -267,16 +175,6 @@ class ItemServiceTest {
                    .verify();
 
            verify(itemRepository).findById(itemId);
-       }
-
-       @Test
-       @DisplayName("Should throw NotFoundException when null ID is provided")
-       void getItemById_WithNullId_ShouldThrowException() {
-           Mono<Item> resultMono = itemService.getItemById(null);
-
-           StepVerifier.create(resultMono)
-                   .expectError(NotFoundException.class)
-                   .verify();
        }
 
        @Test

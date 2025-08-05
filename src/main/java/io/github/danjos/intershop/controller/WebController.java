@@ -25,11 +25,12 @@ import java.util.stream.Collectors;
 @Controller
 @RequiredArgsConstructor
 @Slf4j
+@RequestMapping({"/", "/main"})
 public class WebController {
     private final ItemService itemService;
     private final CartService cartService;
 
-    @GetMapping({"/", "/main", "/main/items"})
+    @GetMapping({"/", "/items"})
     public Mono<Rendering> showMainPage(
             @RequestParam(required = false, defaultValue = "NO") String sort,
             @RequestParam(name = "search", required = false, defaultValue = "") String search,
@@ -60,53 +61,6 @@ public class WebController {
             .onErrorResume(e -> {
                 log.error("Error in showMainPage", e);
                 return Mono.just(Rendering.redirectTo("/error").build());
-            });
-    }
-
-    @GetMapping("/items/{id}")
-    public Mono<Rendering> showItem(@PathVariable Long id, WebSession session) {
-        return Mono.zip(
-                itemService.getItemById(id),
-                Mono.just(cartService.getCart(session))
-            )
-            .map(tuple -> {
-                var item = tuple.getT1();
-                Map<Long, Integer> cart = tuple.getT2();
-                int count = cart.getOrDefault(id, 0);
-                
-                CartItemDto itemWithCount = new CartItemDto(item, count);
-                
-                return Rendering.view("item")
-                        .modelAttribute("item", itemWithCount)
-                        .build();
-            })
-            .onErrorResume(e -> {
-                log.error("Error in showItem", e);
-                return Mono.just(Rendering.redirectTo("/error").build());
-            });
-    }
-
-    @PostMapping("/items/{id}")
-    public Mono<Rendering> handleItemAction(
-            @PathVariable Long id,
-            @RequestParam String action,
-            WebSession session) {
-
-        log.info("Handling item action: {} for item: {}", action, id);
-        
-        Mono<Void> cartOperation = Mono.empty();
-        
-        if ("plus".equals(action)) {
-            cartOperation = cartService.addItemToCartReactive(id, session);
-        } else if ("minus".equals(action)) {
-            cartOperation = cartService.removeItemFromCartReactive(id, session);
-        }
-        
-        return cartOperation
-            .then(Mono.just(Rendering.redirectTo("/items/" + id).build()))
-            .onErrorResume(e -> {
-                log.error("Error in handleItemAction", e);
-                return Mono.just(Rendering.redirectTo("/items/" + id).build());
             });
     }
 

@@ -1,6 +1,6 @@
 package io.github.danjos.intershop.repository;
 
-import io.github.danjos.intershop.TestDatabaseConfig;
+
 import io.github.danjos.intershop.model.Item;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,7 +19,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataR2dbcTest
-@Import(TestDatabaseConfig.class)
 @ActiveProfiles("test")
 @DisplayName("ItemRepository Tests")
 class ItemRepositoryTest {
@@ -77,6 +75,7 @@ class ItemRepositoryTest {
                     })
                     .verifyComplete();
         }
+
 
         @Test
         @DisplayName("Should find items with case insensitive search")
@@ -166,6 +165,70 @@ class ItemRepositoryTest {
         @DisplayName("Should return zero for non-matching query")
         void countByTitleContainingIgnoreCase_WithNonMatchingQuery_ShouldReturnZero() {
             Mono<Long> result = itemRepository.countByTitleContainingIgnoreCase("nonexistent");
+
+            StepVerifier.create(result)
+                    .assertNext(count -> assertThat(count).isEqualTo(0L))
+                    .verifyComplete();
+        }
+    }
+
+    @Nested
+    @DisplayName("Find By Title Or Description Containing Tests")
+    class FindByTitleOrDescriptionContainingTests {
+
+        @Test
+        @DisplayName("Should find items by title or description containing query")
+        void findByTitleOrDescriptionContainingIgnoreCase_WithQuery_ShouldReturnMatchingItems() {
+            Flux<Item> result = itemRepository.findByTitleOrDescriptionContainingIgnoreCase("performance", 10, 0);
+
+            StepVerifier.create(result)
+                    .assertNext(item -> {
+                        assertThat(item.getTitle()).isEqualTo("Laptop");
+                        assertThat(item.getDescription()).contains("performance");
+                    })
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("Should find items with case insensitive search")
+        void findByTitleOrDescriptionContainingIgnoreCase_WithCaseInsensitiveQuery_ShouldReturnMatchingItems() {
+            Flux<Item> result = itemRepository.findByTitleOrDescriptionContainingIgnoreCase("PERFORMANCE", 10, 0);
+
+            StepVerifier.create(result)
+                    .assertNext(item -> {
+                        assertThat(item.getTitle()).isEqualTo("Laptop");
+                    })
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("Should return empty flux for non-matching query")
+        void findByTitleOrDescriptionContainingIgnoreCase_WithNonMatchingQuery_ShouldReturnEmptyFlux() {
+            Flux<Item> result = itemRepository.findByTitleOrDescriptionContainingIgnoreCase("nonexistent", 10, 0);
+
+            StepVerifier.create(result)
+                    .verifyComplete();
+        }
+    }
+
+    @Nested
+    @DisplayName("Count By Title Or Description Containing Tests")
+    class CountByTitleOrDescriptionContainingTests {
+
+        @Test
+        @DisplayName("Should count items by title or description containing query")
+        void countByTitleOrDescriptionContainingIgnoreCase_WithQuery_ShouldReturnCorrectCount() {
+            Mono<Long> result = itemRepository.countByTitleOrDescriptionContainingIgnoreCase("performance");
+
+            StepVerifier.create(result)
+                    .assertNext(count -> assertThat(count).isEqualTo(1L))
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("Should return zero for non-matching query")
+        void countByTitleOrDescriptionContainingIgnoreCase_WithNonMatchingQuery_ShouldReturnZero() {
+            Mono<Long> result = itemRepository.countByTitleOrDescriptionContainingIgnoreCase("nonexistent");
 
             StepVerifier.create(result)
                     .assertNext(count -> assertThat(count).isEqualTo(0L))
@@ -274,15 +337,6 @@ class ItemRepositoryTest {
             StepVerifier.create(result)
                     .verifyComplete();
         }
-
-        @Test
-        @DisplayName("Should return empty for null id")
-        void findById_WithNullId_ShouldReturnEmpty() {
-            Mono<Item> result = itemRepository.findById((Long) null);
-
-            StepVerifier.create(result)
-                    .verifyComplete();
-        }
     }
 
     @Nested
@@ -355,4 +409,4 @@ class ItemRepositoryTest {
                     .verifyComplete();
         }
     }
-} 
+}

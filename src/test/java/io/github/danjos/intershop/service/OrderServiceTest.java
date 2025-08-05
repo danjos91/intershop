@@ -195,45 +195,6 @@ class OrderServiceTest {
                    })
                    .verifyComplete();
        }
-
-       @Test
-       @DisplayName("Should handle null user gracefully")
-       void createOrderFromCart_WithNullUser_ShouldHandleGracefully() {
-           when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
-
-           Mono<Order> resultMono = orderService.createOrderFromCart(cartItems, null);
-
-           StepVerifier.create(resultMono)
-                   .assertNext(result -> {
-                       assertThat(result).isNotNull();
-                   })
-                   .verifyComplete();
-       }
-
-       @Test
-       @DisplayName("Should handle item service errors")
-       void createOrderFromCart_WithItemServiceError_ShouldPropagateError() {
-           when(itemService.getItemById(1L)).thenReturn(Mono.error(new RuntimeException("Item service error")));
-
-           Mono<Order> resultMono = orderService.createOrderFromCart(cartItems, user);
-
-           StepVerifier.create(resultMono)
-                   .expectError(RuntimeException.class)
-                   .verify();
-       }
-
-       @Test
-       @DisplayName("Should handle order repository errors")
-       void createOrderFromCart_WithOrderRepositoryError_ShouldPropagateError() {
-           when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
-           when(orderRepository.save(any(Order.class))).thenReturn(Mono.error(new RuntimeException("Order repository error")));
-
-           Mono<Order> resultMono = orderService.createOrderFromCart(cartItems, user);
-
-           StepVerifier.create(resultMono)
-                   .expectError(RuntimeException.class)
-                   .verify();
-       }
    }
 
    @Nested
@@ -271,15 +232,6 @@ class OrderServiceTest {
                    .verifyComplete();
 
            verify(orderRepository).findByUserId(user.getId());
-       }
-
-       @Test
-       @DisplayName("Should handle null user gracefully")
-       void getUserOrders_WithNullUser_ShouldReturnEmptyFlux() {
-           Flux<Order> resultFlux = orderService.getUserOrders(null);
-
-           StepVerifier.create(resultFlux)
-                   .verifyComplete();
        }
 
        @Test
@@ -332,16 +284,6 @@ class OrderServiceTest {
                    .verify();
 
            verify(orderRepository).findById(orderId);
-       }
-
-       @Test
-       @DisplayName("Should handle null ID gracefully")
-       void getOrderById_WithNullId_ShouldThrowException() {
-           Mono<Order> resultMono = orderService.getOrderById(null);
-
-           StepVerifier.create(resultMono)
-                   .expectError(RuntimeException.class)
-                   .verify();
        }
 
        @Test

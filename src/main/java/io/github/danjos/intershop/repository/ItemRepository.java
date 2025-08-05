@@ -15,6 +15,12 @@ public interface ItemRepository extends R2dbcRepository<Item, Long> {
     @Query("SELECT COUNT(*) FROM items WHERE LOWER(title) LIKE LOWER(CONCAT('%', :title, '%'))")
     Mono<Long> countByTitleContainingIgnoreCase(String title);
 
+    @Query("SELECT * FROM items WHERE LOWER(title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(description) LIKE LOWER(CONCAT('%', :query, '%')) LIMIT :limit OFFSET :offset")
+    Flux<Item> findByTitleOrDescriptionContainingIgnoreCase(String query, int limit, int offset);
+
+    @Query("SELECT COUNT(*) FROM items WHERE LOWER(title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(description) LIKE LOWER(CONCAT('%', :query, '%'))")
+    Mono<Long> countByTitleOrDescriptionContainingIgnoreCase(String query);
+
     @Query("SELECT * FROM items ORDER BY title ASC LIMIT :limit OFFSET :offset")
     Flux<Item> findByOrderByTitleAsc(int limit, int offset);
 

@@ -29,8 +29,8 @@ public class ItemService {
         Mono<Long> totalCountMono;
         
         if (query != null && !query.isEmpty()) {
-            itemsFlux = itemRepository.findByTitleContainingIgnoreCase(query, limit, offset);
-            totalCountMono = itemRepository.countByTitleContainingIgnoreCase(query);
+            itemsFlux = itemRepository.findByTitleOrDescriptionContainingIgnoreCase(query, limit, offset);
+            totalCountMono = itemRepository.countByTitleOrDescriptionContainingIgnoreCase(query);
         } else if ("ALPHA".equals(sort)) {
             itemsFlux = itemRepository.findByOrderByTitleAsc(limit, offset);
             totalCountMono = itemRepository.countAll();

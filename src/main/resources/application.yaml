@@ -14,8 +14,8 @@ spring:
       enabled: true
       path: /h2-console
       settings:
-        trace: false
-        web-allow-others: false
+        trace: true
+        web-allow-others: true
   sql:
     init:
       mode: always

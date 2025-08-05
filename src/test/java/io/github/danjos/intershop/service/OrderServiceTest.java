@@ -5,6 +5,7 @@ import io.github.danjos.intershop.model.Order;
 import io.github.danjos.intershop.model.OrderItem;
 import io.github.danjos.intershop.model.User;
 import io.github.danjos.intershop.repository.OrderRepository;
+import io.github.danjos.intershop.repository.OrderItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +30,9 @@ class OrderServiceTest {
 
    @Mock
    private OrderRepository orderRepository;
+
+   @Mock
+   private OrderItemRepository orderItemRepository;
 
    @Mock
    private ItemService itemService;
@@ -78,6 +82,11 @@ class OrderServiceTest {
            savedOrder.setId(1L);
            return Mono.just(savedOrder);
        });
+       when(orderItemRepository.save(any(OrderItem.class))).thenAnswer(invocation -> {
+           OrderItem savedOrderItem = invocation.getArgument(0);
+           savedOrderItem.setId(1L);
+           return Mono.just(savedOrderItem);
+       });
 
        Mono<Order> resultMono = orderService.createOrderFromCart(cartItems, user);
 
@@ -105,6 +114,7 @@ class OrderServiceTest {
 
        verify(itemService, times(2)).getItemById(any());
        verify(orderRepository).save(any(Order.class));
+       verify(orderItemRepository, times(2)).save(any(OrderItem.class));
    }
 
    @Test
@@ -128,6 +138,7 @@ class OrderServiceTest {
    void getUserOrders_WithValidUser_ShouldReturnOrders() {
        Flux<Order> expectedOrders = Flux.just(order);
        when(orderRepository.findByUserId(user.getId())).thenReturn(expectedOrders);
+       when(orderItemRepository.findByOrderId(order.getId())).thenReturn(Flux.empty());
 
        Flux<Order> resultFlux = orderService.getUserOrders(user);
 
@@ -139,6 +150,7 @@ class OrderServiceTest {
                .verifyComplete();
 
        verify(orderRepository).findByUserId(user.getId());
+       verify(orderItemRepository).findByOrderId(order.getId());
    }
 
    @Test
@@ -157,6 +169,7 @@ class OrderServiceTest {
    void getOrderById_WithValidId_ShouldReturnOrder() {
        Long orderId = 1L;
        when(orderRepository.findById(orderId)).thenReturn(Mono.just(order));
+       when(orderItemRepository.findByOrderId(orderId)).thenReturn(Flux.empty());
 
        Mono<Order> resultMono = orderService.getOrderById(orderId);
 
@@ -168,6 +181,7 @@ class OrderServiceTest {
                .verifyComplete();
 
        verify(orderRepository).findById(orderId);
+       verify(orderItemRepository).findByOrderId(orderId);
    }
 
    @Test
@@ -192,6 +206,11 @@ class OrderServiceTest {
            Order savedOrder = invocation.getArgument(0);
            savedOrder.setId(1L);
            return Mono.just(savedOrder);
+       });
+       when(orderItemRepository.save(any(OrderItem.class))).thenAnswer(invocation -> {
+           OrderItem savedOrderItem = invocation.getArgument(0);
+           savedOrderItem.setId(1L);
+           return Mono.just(savedOrderItem);
        });
 
        Mono<Order> resultMono = orderService.createOrderFromCart(cartItems, user);

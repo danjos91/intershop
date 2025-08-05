@@ -7,6 +7,8 @@ import io.github.danjos.intershop.model.User;
 import io.github.danjos.intershop.repository.OrderRepository;
 import io.github.danjos.intershop.repository.OrderItemRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,6 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("OrderService Tests")
 class OrderServiceTest {
 
    @Mock
@@ -73,153 +76,285 @@ class OrderServiceTest {
        cartItems.put(2L, 1);
    }
 
-   @Test
-   void createOrderFromCart_WithValidItems_ShouldCreateOrder() {
-       when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
-       when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
-       when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
-           Order savedOrder = invocation.getArgument(0);
-           savedOrder.setId(1L);
-           return Mono.just(savedOrder);
-       });
-       when(orderItemRepository.save(any(OrderItem.class))).thenAnswer(invocation -> {
-           OrderItem savedOrderItem = invocation.getArgument(0);
-           savedOrderItem.setId(1L);
-           return Mono.just(savedOrderItem);
-       });
+   @Nested
+   @DisplayName("Create Order From Cart Tests")
+   class CreateOrderFromCartTests {
 
-       Mono<Order> resultMono = orderService.createOrderFromCart(cartItems, user);
+       @Test
+       @DisplayName("Should create order with valid items")
+       void createOrderFromCart_WithValidItems_ShouldCreateOrder() {
+           when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
+           when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
+           when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+               Order savedOrder = invocation.getArgument(0);
+               savedOrder.setId(1L);
+               return Mono.just(savedOrder);
+           });
+           when(orderItemRepository.save(any(OrderItem.class))).thenAnswer(invocation -> {
+               OrderItem savedOrderItem = invocation.getArgument(0);
+               savedOrderItem.setId(1L);
+               return Mono.just(savedOrderItem);
+           });
 
-       StepVerifier.create(resultMono)
-               .assertNext(result -> {
-                   assertThat(result).isNotNull();
-                   assertThat(result.getUserId()).isEqualTo(user.getId());
-                   assertThat(result.getStatus()).isEqualTo("PROCESSING");
-                   assertThat(result.getItems()).hasSize(2);
+           Mono<Order> resultMono = orderService.createOrderFromCart(cartItems, user);
 
-                   assertThat(result.getOrderDate()).isNotNull();
-                   assertThat(result.getOrderDate()).isBeforeOrEqualTo(LocalDateTime.now());
-                   assertThat(result.getOrderDate()).isAfter(LocalDateTime.now().minusSeconds(5));
+           StepVerifier.create(resultMono)
+                   .assertNext(result -> {
+                       assertThat(result).isNotNull();
+                       assertThat(result.getUserId()).isEqualTo(user.getId());
+                       assertThat(result.getStatus()).isEqualTo("PROCESSING");
+                       assertThat(result.getItems()).hasSize(2);
 
-                   List<OrderItem> orderItems = result.getItems();
-                   assertThat(orderItems.get(0).getItem()).isEqualTo(laptop);
-                   assertThat(orderItems.get(0).getQuantity()).isEqualTo(2);
-                   assertThat(orderItems.get(0).getPrice()).isEqualTo(999.99);
+                       assertThat(result.getOrderDate()).isNotNull();
+                       assertThat(result.getOrderDate()).isBeforeOrEqualTo(LocalDateTime.now());
+                       assertThat(result.getOrderDate()).isAfter(LocalDateTime.now().minusSeconds(5));
 
-                   assertThat(orderItems.get(1).getItem()).isEqualTo(smartphone);
-                   assertThat(orderItems.get(1).getQuantity()).isEqualTo(1);
-                   assertThat(orderItems.get(1).getPrice()).isEqualTo(599.99);
-               })
-               .verifyComplete();
+                       List<OrderItem> orderItems = result.getItems();
+                       assertThat(orderItems.get(0).getItem()).isEqualTo(laptop);
+                       assertThat(orderItems.get(0).getQuantity()).isEqualTo(2);
+                       assertThat(orderItems.get(0).getPrice()).isEqualTo(999.99);
 
-       verify(itemService, times(2)).getItemById(any());
-       verify(orderRepository).save(any(Order.class));
-       verify(orderItemRepository, times(2)).save(any(OrderItem.class));
+                       assertThat(orderItems.get(1).getItem()).isEqualTo(smartphone);
+                       assertThat(orderItems.get(1).getQuantity()).isEqualTo(1);
+                       assertThat(orderItems.get(1).getPrice()).isEqualTo(599.99);
+                   })
+                   .verifyComplete();
+
+           verify(itemService, times(2)).getItemById(any());
+           verify(orderRepository).save(any(Order.class));
+           verify(orderItemRepository, times(2)).save(any(OrderItem.class));
+       }
+
+       @Test
+       @DisplayName("Should create empty order when cart is empty")
+       void createOrderFromCart_EmptyCart_ShouldCreateEmptyOrder() {
+           Map<Long, Integer> emptyCart = new HashMap<>();
+           when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
+
+           Mono<Order> resultMono = orderService.createOrderFromCart(emptyCart, user);
+
+           StepVerifier.create(resultMono)
+                   .assertNext(result -> {
+                       assertThat(result).isNotNull();
+                       assertThat(result.getItems()).isEmpty();
+                   })
+                   .verifyComplete();
+
+           verify(orderRepository).save(any(Order.class));
+       }
+
+       @Test
+       @DisplayName("Should calculate correct total for order")
+       void createOrderFromCart_ShouldCalculateCorrectTotal() {
+           when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
+           when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
+           when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+               Order savedOrder = invocation.getArgument(0);
+               savedOrder.setId(1L);
+               return Mono.just(savedOrder);
+           });
+           when(orderItemRepository.save(any(OrderItem.class))).thenAnswer(invocation -> {
+               OrderItem savedOrderItem = invocation.getArgument(0);
+               savedOrderItem.setId(1L);
+               return Mono.just(savedOrderItem);
+           });
+
+           Mono<Order> resultMono = orderService.createOrderFromCart(cartItems, user);
+
+           StepVerifier.create(resultMono)
+                   .assertNext(result -> {
+                       double expectedTotal = (999.99 * 2) + (599.99 * 1);
+                       assertThat(result.getTotalSum()).isEqualTo(expectedTotal);
+                   })
+                   .verifyComplete();
+       }
+
+       @Test
+       @DisplayName("Should handle missing items gracefully")
+       void createOrderFromCart_WithMissingItems_ShouldHandleGracefully() {
+           when(itemService.getItemById(1L)).thenReturn(Mono.empty());
+           when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
+           when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+               Order savedOrder = invocation.getArgument(0);
+               savedOrder.setId(1L);
+               return Mono.just(savedOrder);
+           });
+           when(orderItemRepository.save(any(OrderItem.class))).thenAnswer(invocation -> {
+               OrderItem savedOrderItem = invocation.getArgument(0);
+               savedOrderItem.setId(1L);
+               return Mono.just(savedOrderItem);
+           });
+
+           Mono<Order> resultMono = orderService.createOrderFromCart(cartItems, user);
+
+           StepVerifier.create(resultMono)
+                   .assertNext(result -> {
+                       assertThat(result).isNotNull();
+                       assertThat(result.getItems()).hasSize(1);
+                       assertThat(result.getItems().get(0).getItem()).isEqualTo(smartphone);
+                   })
+                   .verifyComplete();
+       }
+
+       @Test
+       @DisplayName("Should handle null user gracefully")
+       void createOrderFromCart_WithNullUser_ShouldHandleGracefully() {
+           when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
+
+           Mono<Order> resultMono = orderService.createOrderFromCart(cartItems, null);
+
+           StepVerifier.create(resultMono)
+                   .assertNext(result -> {
+                       assertThat(result).isNotNull();
+                   })
+                   .verifyComplete();
+       }
+
+       @Test
+       @DisplayName("Should handle item service errors")
+       void createOrderFromCart_WithItemServiceError_ShouldPropagateError() {
+           when(itemService.getItemById(1L)).thenReturn(Mono.error(new RuntimeException("Item service error")));
+
+           Mono<Order> resultMono = orderService.createOrderFromCart(cartItems, user);
+
+           StepVerifier.create(resultMono)
+                   .expectError(RuntimeException.class)
+                   .verify();
+       }
+
+       @Test
+       @DisplayName("Should handle order repository errors")
+       void createOrderFromCart_WithOrderRepositoryError_ShouldPropagateError() {
+           when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
+           when(orderRepository.save(any(Order.class))).thenReturn(Mono.error(new RuntimeException("Order repository error")));
+
+           Mono<Order> resultMono = orderService.createOrderFromCart(cartItems, user);
+
+           StepVerifier.create(resultMono)
+                   .expectError(RuntimeException.class)
+                   .verify();
+       }
    }
 
-   @Test
-   void createOrderFromCart_EmptyCart_ShouldCreateEmptyOrder() {
-       Map<Long, Integer> emptyCart = new HashMap<>();
-       when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
+   @Nested
+   @DisplayName("Get User Orders Tests")
+   class GetUserOrdersTests {
 
-       Mono<Order> resultMono = orderService.createOrderFromCart(emptyCart, user);
+       @Test
+       @DisplayName("Should return orders for valid user")
+       void getUserOrders_WithValidUser_ShouldReturnOrders() {
+           Flux<Order> expectedOrders = Flux.just(order);
+           when(orderRepository.findByUserId(user.getId())).thenReturn(expectedOrders);
+           when(orderItemRepository.findByOrderId(order.getId())).thenReturn(Flux.empty());
 
-       StepVerifier.create(resultMono)
-               .assertNext(result -> {
-                   assertThat(result).isNotNull();
-                   assertThat(result.getItems()).isEmpty();
-               })
-               .verifyComplete();
+           Flux<Order> resultFlux = orderService.getUserOrders(user);
 
-       verify(orderRepository).save(any(Order.class));
+           StepVerifier.create(resultFlux)
+                   .assertNext(result -> {
+                       assertThat(result).isNotNull();
+                       assertThat(result).isEqualTo(order);
+                   })
+                   .verifyComplete();
+
+           verify(orderRepository).findByUserId(user.getId());
+           verify(orderItemRepository).findByOrderId(order.getId());
+       }
+
+       @Test
+       @DisplayName("Should return empty flux when user has no orders")
+       void getUserOrders_WithNoOrders_ShouldReturnEmptyFlux() {
+           when(orderRepository.findByUserId(user.getId())).thenReturn(Flux.empty());
+
+           Flux<Order> resultFlux = orderService.getUserOrders(user);
+
+           StepVerifier.create(resultFlux)
+                   .verifyComplete();
+
+           verify(orderRepository).findByUserId(user.getId());
+       }
+
+       @Test
+       @DisplayName("Should handle null user gracefully")
+       void getUserOrders_WithNullUser_ShouldReturnEmptyFlux() {
+           Flux<Order> resultFlux = orderService.getUserOrders(null);
+
+           StepVerifier.create(resultFlux)
+                   .verifyComplete();
+       }
+
+       @Test
+       @DisplayName("Should handle repository errors")
+       void getUserOrders_WithRepositoryError_ShouldPropagateError() {
+           when(orderRepository.findByUserId(user.getId())).thenReturn(Flux.error(new RuntimeException("Repository error")));
+
+           Flux<Order> resultFlux = orderService.getUserOrders(user);
+
+           StepVerifier.create(resultFlux)
+                   .expectError(RuntimeException.class)
+                   .verify();
+       }
    }
 
-   @Test
-   void getUserOrders_WithValidUser_ShouldReturnOrders() {
-       Flux<Order> expectedOrders = Flux.just(order);
-       when(orderRepository.findByUserId(user.getId())).thenReturn(expectedOrders);
-       when(orderItemRepository.findByOrderId(order.getId())).thenReturn(Flux.empty());
+   @Nested
+   @DisplayName("Get Order By ID Tests")
+   class GetOrderByIdTests {
 
-       Flux<Order> resultFlux = orderService.getUserOrders(user);
+       @Test
+       @DisplayName("Should return order when valid ID is provided")
+       void getOrderById_WithValidId_ShouldReturnOrder() {
+           Long orderId = 1L;
+           when(orderRepository.findById(orderId)).thenReturn(Mono.just(order));
+           when(orderItemRepository.findByOrderId(orderId)).thenReturn(Flux.empty());
 
-       StepVerifier.create(resultFlux)
-               .assertNext(result -> {
-                   assertThat(result).isNotNull();
-                   assertThat(result).isEqualTo(order);
-               })
-               .verifyComplete();
+           Mono<Order> resultMono = orderService.getOrderById(orderId);
 
-       verify(orderRepository).findByUserId(user.getId());
-       verify(orderItemRepository).findByOrderId(order.getId());
-   }
+           StepVerifier.create(resultMono)
+                   .assertNext(result -> {
+                       assertThat(result).isNotNull();
+                       assertThat(result.getId()).isEqualTo(orderId);
+                   })
+                   .verifyComplete();
 
-   @Test
-   void getUserOrders_WithNoOrders_ShouldReturnEmptyFlux() {
-       when(orderRepository.findByUserId(user.getId())).thenReturn(Flux.empty());
+           verify(orderRepository).findById(orderId);
+           verify(orderItemRepository).findByOrderId(orderId);
+       }
 
-       Flux<Order> resultFlux = orderService.getUserOrders(user);
+       @Test
+       @DisplayName("Should throw exception when invalid ID is provided")
+       void getOrderById_WithInvalidId_ShouldThrowException() {
+           Long orderId = 999L;
+           when(orderRepository.findById(orderId)).thenReturn(Mono.empty());
 
-       StepVerifier.create(resultFlux)
-               .verifyComplete();
+           Mono<Order> resultMono = orderService.getOrderById(orderId);
 
-       verify(orderRepository).findByUserId(user.getId());
-   }
+           StepVerifier.create(resultMono)
+                   .expectError(RuntimeException.class)
+                   .verify();
 
-   @Test
-   void getOrderById_WithValidId_ShouldReturnOrder() {
-       Long orderId = 1L;
-       when(orderRepository.findById(orderId)).thenReturn(Mono.just(order));
-       when(orderItemRepository.findByOrderId(orderId)).thenReturn(Flux.empty());
+           verify(orderRepository).findById(orderId);
+       }
 
-       Mono<Order> resultMono = orderService.getOrderById(orderId);
+       @Test
+       @DisplayName("Should handle null ID gracefully")
+       void getOrderById_WithNullId_ShouldThrowException() {
+           Mono<Order> resultMono = orderService.getOrderById(null);
 
-       StepVerifier.create(resultMono)
-               .assertNext(result -> {
-                   assertThat(result).isNotNull();
-                   assertThat(result.getId()).isEqualTo(orderId);
-               })
-               .verifyComplete();
+           StepVerifier.create(resultMono)
+                   .expectError(RuntimeException.class)
+                   .verify();
+       }
 
-       verify(orderRepository).findById(orderId);
-       verify(orderItemRepository).findByOrderId(orderId);
-   }
+       @Test
+       @DisplayName("Should handle repository errors")
+       void getOrderById_WithRepositoryError_ShouldPropagateError() {
+           Long orderId = 1L;
+           when(orderRepository.findById(orderId)).thenReturn(Mono.error(new RuntimeException("Repository error")));
 
-   @Test
-   void getOrderById_WithInvalidId_ShouldThrowException() {
-       Long orderId = 999L;
-       when(orderRepository.findById(orderId)).thenReturn(Mono.empty());
+           Mono<Order> resultMono = orderService.getOrderById(orderId);
 
-       Mono<Order> resultMono = orderService.getOrderById(orderId);
-
-       StepVerifier.create(resultMono)
-               .expectError(RuntimeException.class)
-               .verify();
-
-       verify(orderRepository).findById(orderId);
-   }
-
-   @Test
-   void createOrderFromCart_ShouldCalculateCorrectTotal() {
-       when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
-       when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
-       when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
-           Order savedOrder = invocation.getArgument(0);
-           savedOrder.setId(1L);
-           return Mono.just(savedOrder);
-       });
-       when(orderItemRepository.save(any(OrderItem.class))).thenAnswer(invocation -> {
-           OrderItem savedOrderItem = invocation.getArgument(0);
-           savedOrderItem.setId(1L);
-           return Mono.just(savedOrderItem);
-       });
-
-       Mono<Order> resultMono = orderService.createOrderFromCart(cartItems, user);
-
-       StepVerifier.create(resultMono)
-               .assertNext(result -> {
-                   double expectedTotal = (999.99 * 2) + (599.99 * 1);
-                   assertThat(result.getTotalSum()).isEqualTo(expectedTotal);
-               })
-               .verifyComplete();
+           StepVerifier.create(resultMono)
+                   .expectError(RuntimeException.class)
+                   .verify();
+       }
    }
 } 

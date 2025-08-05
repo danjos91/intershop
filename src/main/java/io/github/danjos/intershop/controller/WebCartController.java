@@ -67,7 +67,7 @@ public class WebCartController {
             cartOperation = cartService.addItemToCartReactive(id, session);
         } else if ("minus".equals(action)) {
             cartOperation = cartService.removeItemFromCartReactive(id, session);
-        } else if ("deqlete".equals(action)) {
+        } else if ("delete".equals(action)) {
             cartOperation = cartService.deleteItemFromCartReactive(id, session);
         }
         

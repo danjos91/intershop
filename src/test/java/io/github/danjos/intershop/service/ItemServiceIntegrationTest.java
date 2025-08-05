@@ -234,25 +234,4 @@ class ItemServiceIntegrationTest {
                     .verify();
         }
     }
-
-    @Nested
-    @DisplayName("Delete Item Integration Tests")
-    class DeleteItemIntegrationTests {
-
-        @Test
-        @DisplayName("Should delete item when valid ID is provided")
-        void deleteItem_WithValidId_ShouldDeleteItem() {
-            Item savedItem = itemRepository.save(laptop).block();
-            Long itemId = savedItem.getId();
-
-            Mono<Void> deleteResult = itemService.deleteItem(itemId);
-
-            StepVerifier.create(deleteResult)
-                    .verifyComplete();
-
-            Mono<Item> foundItem = itemRepository.findById(itemId);
-            StepVerifier.create(foundItem)
-                    .verifyComplete();
-        }
-    }
 }

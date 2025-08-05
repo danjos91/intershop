@@ -1,7 +1,6 @@
 package io.github.danjos.intershop.service;
 
 import io.github.danjos.intershop.dto.CartItemDto;
-import io.github.danjos.intershop.model.Item;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.WebSession;
@@ -12,7 +11,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -82,38 +80,6 @@ public class CartService {
             session.getAttributes().put("cart", cart);
         }
         return cart;
-    }
-
-    public List<CartItemDto> getCartItems(WebSession session) {
-        if (session == null) {
-            return new ArrayList<>();
-        }
-        Map<Long, Integer> cart = getCartInternal(session);
-        return cart.entrySet().stream()
-                .map(entry -> {
-                    Item item = itemService.getItemById(entry.getKey()).block();
-                    return new CartItemDto(item, entry.getValue());
-                })
-                .filter(dto -> dto.getId() != null)
-                .collect(Collectors.toList());
-    }
-
-    public double getCartTotal(WebSession session) {
-        return getCartItems(session).stream()
-                .mapToDouble(item -> item.getPrice() * item.getCount())
-                .sum();
-    }
-
-    public Flux<CartItemDto> getCartItemsFlux(WebSession session) {
-        if (session == null) {
-            return Flux.empty();
-        }
-        Map<Long, Integer> cart = getCartInternal(session);
-        return Flux.fromStream(cart.entrySet().stream())
-                .flatMap(entry -> 
-                    itemService.getItemById(entry.getKey())
-                        .map(item -> new CartItemDto(item, entry.getValue()))
-                );
     }
 
     public Mono<List<CartItemDto>> getCartItemsReactive(WebSession session) {

@@ -62,7 +62,6 @@ class CartServiceTest {
        cart.put(1L, 2);
        cart.put(2L, 1);
 
-       // Setup session attributes mock
        when(session.getAttributes()).thenReturn(sessionAttributes);
    }
 
@@ -273,38 +272,6 @@ class CartServiceTest {
    }
 
    @Nested
-   @DisplayName("Get Cart Items Tests")
-   class GetCartItemsTests {
-
-       @Test
-       @DisplayName("Should return cart item DTOs with items")
-       void getCartItems_WithItems_ShouldReturnCartItemDtos() {
-           when(sessionAttributes.get("cart")).thenReturn(cart);
-           when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
-           when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
-
-           List<CartItemDto> result = cartService.getCartItems(session);
-
-           assertThat(result).hasSize(2);
-           assertThat(result.get(0).getId()).isEqualTo(1L);
-           assertThat(result.get(0).getCount()).isEqualTo(2);
-           assertThat(result.get(1).getId()).isEqualTo(2L);
-           assertThat(result.get(1).getCount()).isEqualTo(1);
-       }
-
-       @Test
-       @DisplayName("Should return empty list for empty cart")
-       void getCartItems_EmptyCart_ShouldReturnEmptyList() {
-           Map<Long, Integer> emptyCart = new HashMap<>();
-           when(sessionAttributes.get("cart")).thenReturn(emptyCart);
-
-           List<CartItemDto> result = cartService.getCartItems(session);
-
-           assertThat(result).isEmpty();
-       }
-   }
-
-   @Nested
    @DisplayName("Get Cart Items Reactive Tests")
    class GetCartItemsReactiveTests {
 
@@ -339,34 +306,6 @@ class CartServiceTest {
            StepVerifier.create(result)
                    .assertNext(items -> assertThat(items).isEmpty())
                    .verifyComplete();
-       }
-   }
-
-   @Nested
-   @DisplayName("Get Cart Total Tests")
-   class GetCartTotalTests {
-
-       @Test
-       @DisplayName("Should return correct total for items in cart")
-       void getCartTotal_WithItems_ShouldReturnCorrectTotal() {
-           when(sessionAttributes.get("cart")).thenReturn(cart);
-           when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
-           when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
-
-           double result = cartService.getCartTotal(session);
-
-           assertThat(result).isCloseTo(2599.97, within(0.01));
-       }
-
-       @Test
-       @DisplayName("Should return zero for empty cart")
-       void getCartTotal_EmptyCart_ShouldReturnZero() {
-           Map<Long, Integer> emptyCart = new HashMap<>();
-           when(sessionAttributes.get("cart")).thenReturn(emptyCart);
-
-           double result = cartService.getCartTotal(session);
-
-           assertThat(result).isEqualTo(0.0);
        }
    }
 

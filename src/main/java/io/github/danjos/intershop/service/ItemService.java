@@ -8,7 +8,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -53,9 +52,5 @@ public class ItemService {
     public Mono<Item> getItemById(Long id) {
         return itemRepository.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundException("Item with id " + id + " not found")));
-    }
-
-    public Mono<Void> deleteItem(Long id) {
-        return itemRepository.deleteById(id);
     }
 }

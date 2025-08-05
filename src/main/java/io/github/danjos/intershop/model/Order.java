@@ -1,6 +1,7 @@
 package io.github.danjos.intershop.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Table;
 import lombok.Data;
 
@@ -19,7 +20,8 @@ public class Order {
     private LocalDateTime orderDate;
     private String status;
 
-    private transient List<OrderItem> items = new ArrayList<>();
+    @Transient
+    private List<OrderItem> items = new ArrayList<>();
 
     public double getTotalSum() {
         return items.stream().mapToDouble(oi -> oi.getPrice() * oi.getQuantity()).sum();

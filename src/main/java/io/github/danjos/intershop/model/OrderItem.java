@@ -1,6 +1,7 @@
 package io.github.danjos.intershop.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Table;
 import lombok.Data;
 
@@ -16,6 +17,8 @@ public class OrderItem {
     private int quantity;
     private double price;
 
-    private transient Order order;
-    private transient Item item;
+    @Transient
+    private Order order;
+    @Transient
+    private Item item;
 }

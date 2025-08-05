@@ -8,6 +8,7 @@ import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,12 +20,18 @@ public class CartService {
     private final ItemService itemService;
 
     public synchronized void addItemToCart(Long itemId, WebSession session) {
+        if (session == null) {
+            return;
+        }
         Map<Long, Integer> cart = getCartInternal(session);
         cart.put(itemId, cart.getOrDefault(itemId, 0) + 1);
         session.getAttributes().put("cart", cart);
     }
 
     public synchronized void removeItemFromCart(Long itemId, WebSession session) {
+        if (session == null) {
+            return;
+        }
         Map<Long, Integer> cart = getCartInternal(session);
         if (cart.containsKey(itemId)) {
             if (cart.get(itemId) > 1) {
@@ -46,6 +53,9 @@ public class CartService {
 
     public Mono<Void> deleteItemFromCartReactive(Long itemId, WebSession session) {
         return Mono.fromRunnable(() -> {
+            if (session == null) {
+                return;
+            }
             Map<Long, Integer> cart = getCartInternal(session);
             cart.remove(itemId);
             session.getAttributes().put("cart", cart);
@@ -53,10 +63,16 @@ public class CartService {
     }
 
     public synchronized Map<Long, Integer> getCart(WebSession session) {
+        if (session == null) {
+            return new HashMap<>();
+        }
         return getCartInternal(session);
     }
 
     private Map<Long, Integer> getCartInternal(WebSession session) {
+        if (session == null || session.getAttributes() == null) {
+            return new HashMap<>();
+        }
         Object cartAttribute = session.getAttributes().get("cart");
         Map<Long, Integer> cart;
         if (cartAttribute instanceof Map) {
@@ -69,12 +85,16 @@ public class CartService {
     }
 
     public List<CartItemDto> getCartItems(WebSession session) {
+        if (session == null) {
+            return new ArrayList<>();
+        }
         Map<Long, Integer> cart = getCartInternal(session);
         return cart.entrySet().stream()
                 .map(entry -> {
                     Item item = itemService.getItemById(entry.getKey()).block();
                     return new CartItemDto(item, entry.getValue());
                 })
+                .filter(dto -> dto.getId() != null)
                 .collect(Collectors.toList());
     }
 
@@ -85,6 +105,9 @@ public class CartService {
     }
 
     public Flux<CartItemDto> getCartItemsFlux(WebSession session) {
+        if (session == null) {
+            return Flux.empty();
+        }
         Map<Long, Integer> cart = getCartInternal(session);
         return Flux.fromStream(cart.entrySet().stream())
                 .flatMap(entry -> 
@@ -94,6 +117,9 @@ public class CartService {
     }
 
     public Mono<List<CartItemDto>> getCartItemsReactive(WebSession session) {
+        if (session == null) {
+            return Mono.just(new ArrayList<>());
+        }
         Map<Long, Integer> cart = getCartInternal(session);
         
         return Flux.fromStream(cart.entrySet().stream())

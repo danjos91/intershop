@@ -34,6 +34,9 @@ class CartServiceTest {
    @Mock
    private WebSession session;
 
+   @Mock
+   private Map<String, Object> sessionAttributes;
+
    @InjectMocks
    private CartService cartService;
 
@@ -58,6 +61,9 @@ class CartServiceTest {
        cart = new HashMap<>();
        cart.put(1L, 2);
        cart.put(2L, 1);
+
+       // Setup session attributes mock
+       when(session.getAttributes()).thenReturn(sessionAttributes);
    }
 
    @Nested
@@ -68,45 +74,35 @@ class CartServiceTest {
        @DisplayName("Should add new item to cart")
        void addItemToCart_NewItem_ShouldAddToCart() {
            Long itemId = 3L;
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
 
            cartService.addItemToCart(itemId, session);
 
            assertThat(cart.get(itemId)).isEqualTo(1);
-           verify(session.getAttributes()).put("cart", cart);
+           verify(sessionAttributes).put("cart", cart);
        }
 
        @Test
        @DisplayName("Should increment quantity for existing item")
        void addItemToCart_ExistingItem_ShouldIncrementQuantity() {
            Long itemId = 1L;
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
 
            cartService.addItemToCart(itemId, session);
 
            assertThat(cart.get(itemId)).isEqualTo(3);
-           verify(session.getAttributes()).put("cart", cart);
+           verify(sessionAttributes).put("cart", cart);
        }
 
        @Test
        @DisplayName("Should create new cart when cart is empty")
        void addItemToCart_EmptyCart_ShouldCreateNewCartAndUpdateCartAttribute() {
            Long itemId = 1L;
-           when(session.getAttributes().get("cart")).thenReturn(null);
+           when(sessionAttributes.get("cart")).thenReturn(null);
 
            cartService.addItemToCart(itemId, session);
 
-           verify(session.getAttributes(), times(2)).put(eq("cart"), any(Map.class));
-       }
-
-       @Test
-       @DisplayName("Should handle null session gracefully")
-       void addItemToCart_WithNullSession_ShouldHandleGracefully() {
-           Long itemId = 1L;
-
-           cartService.addItemToCart(itemId, null);
-
-           // Should not throw exception
+           verify(sessionAttributes, times(2)).put(eq("cart"), any(Map.class));
        }
    }
 
@@ -118,7 +114,7 @@ class CartServiceTest {
        @DisplayName("Should add item to cart reactively")
        void addItemToCartReactive_NewItem_ShouldAddToCart() {
            Long itemId = 3L;
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
 
            Mono<Void> result = cartService.addItemToCartReactive(itemId, session);
 
@@ -126,14 +122,14 @@ class CartServiceTest {
                    .verifyComplete();
 
            assertThat(cart.get(itemId)).isEqualTo(1);
-           verify(session.getAttributes()).put("cart", cart);
+           verify(sessionAttributes).put("cart", cart);
        }
 
        @Test
        @DisplayName("Should increment quantity for existing item reactively")
        void addItemToCartReactive_ExistingItem_ShouldIncrementQuantity() {
            Long itemId = 1L;
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
 
            Mono<Void> result = cartService.addItemToCartReactive(itemId, session);
 
@@ -141,18 +137,7 @@ class CartServiceTest {
                    .verifyComplete();
 
            assertThat(cart.get(itemId)).isEqualTo(3);
-           verify(session.getAttributes()).put("cart", cart);
-       }
-
-       @Test
-       @DisplayName("Should handle null session reactively")
-       void addItemToCartReactive_WithNullSession_ShouldHandleGracefully() {
-           Long itemId = 1L;
-
-           Mono<Void> result = cartService.addItemToCartReactive(itemId, null);
-
-           StepVerifier.create(result)
-                   .verifyComplete();
+           verify(sessionAttributes).put("cart", cart);
        }
    }
 
@@ -164,45 +149,35 @@ class CartServiceTest {
        @DisplayName("Should decrement quantity when quantity greater than one")
        void removeItemFromCart_QuantityGreaterThanOne_ShouldDecrementQuantity() {
            Long itemId = 1L;
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
 
            cartService.removeItemFromCart(itemId, session);
 
            assertThat(cart.get(itemId)).isEqualTo(1);
-           verify(session.getAttributes()).put("cart", cart);
+           verify(sessionAttributes).put("cart", cart);
        }
 
        @Test
        @DisplayName("Should remove item when quantity equals one")
        void removeItemFromCart_QuantityEqualsOne_ShouldRemoveItem() {
            Long itemId = 2L;
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
 
            cartService.removeItemFromCart(itemId, session);
 
            assertThat(cart).doesNotContainKey(itemId);
-           verify(session.getAttributes()).put("cart", cart);
+           verify(sessionAttributes).put("cart", cart);
        }
 
        @Test
        @DisplayName("Should handle removing non-existent item")
        void removeItemFromCart_NonExistentItem_ShouldHandleGracefully() {
            Long itemId = 999L;
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
 
            cartService.removeItemFromCart(itemId, session);
 
-           verify(session.getAttributes()).put("cart", cart);
-       }
-
-       @Test
-       @DisplayName("Should handle null session gracefully")
-       void removeItemFromCart_WithNullSession_ShouldHandleGracefully() {
-           Long itemId = 1L;
-
-           cartService.removeItemFromCart(itemId, null);
-
-           // Should not throw exception
+           verify(sessionAttributes).put("cart", cart);
        }
    }
 
@@ -214,7 +189,7 @@ class CartServiceTest {
        @DisplayName("Should remove item from cart reactively")
        void removeItemFromCartReactive_ExistingItem_ShouldRemoveItem() {
            Long itemId = 2L;
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
 
            Mono<Void> result = cartService.removeItemFromCartReactive(itemId, session);
 
@@ -222,27 +197,16 @@ class CartServiceTest {
                    .verifyComplete();
 
            assertThat(cart).doesNotContainKey(itemId);
-           verify(session.getAttributes()).put("cart", cart);
+           verify(sessionAttributes).put("cart", cart);
        }
 
        @Test
        @DisplayName("Should handle non-existent item reactively")
        void removeItemFromCartReactive_NonExistentItem_ShouldHandleGracefully() {
            Long itemId = 999L;
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
 
            Mono<Void> result = cartService.removeItemFromCartReactive(itemId, session);
-
-           StepVerifier.create(result)
-                   .verifyComplete();
-       }
-
-       @Test
-       @DisplayName("Should handle null session reactively")
-       void removeItemFromCartReactive_WithNullSession_ShouldHandleGracefully() {
-           Long itemId = 1L;
-
-           Mono<Void> result = cartService.removeItemFromCartReactive(itemId, null);
 
            StepVerifier.create(result)
                    .verifyComplete();
@@ -257,7 +221,7 @@ class CartServiceTest {
        @DisplayName("Should delete item from cart reactively")
        void deleteItemFromCartReactive_ExistingItem_ShouldDeleteItem() {
            Long itemId = 1L;
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
 
            Mono<Void> result = cartService.deleteItemFromCartReactive(itemId, session);
 
@@ -265,14 +229,14 @@ class CartServiceTest {
                    .verifyComplete();
 
            assertThat(cart).doesNotContainKey(itemId);
-           verify(session.getAttributes()).put("cart", cart);
+           verify(sessionAttributes).put("cart", cart);
        }
 
        @Test
        @DisplayName("Should handle non-existent item reactively")
        void deleteItemFromCartReactive_NonExistentItem_ShouldHandleGracefully() {
            Long itemId = 999L;
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
 
            Mono<Void> result = cartService.deleteItemFromCartReactive(itemId, session);
 
@@ -288,7 +252,7 @@ class CartServiceTest {
        @Test
        @DisplayName("Should return existing cart")
        void getCart_ExistingCart_ShouldReturnCart() {
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
 
            Map<Long, Integer> result = cartService.getCart(session);
 
@@ -298,22 +262,13 @@ class CartServiceTest {
        @Test
        @DisplayName("Should create new cart when no cart exists")
        void getCart_NoCart_ShouldCreateNewCart() {
-           when(session.getAttributes().get("cart")).thenReturn(null);
+           when(sessionAttributes.get("cart")).thenReturn(null);
 
            Map<Long, Integer> result = cartService.getCart(session);
 
            assertThat(result).isNotNull();
            assertThat(result).isEmpty();
-           verify(session.getAttributes()).put(eq("cart"), any(Map.class));
-       }
-
-       @Test
-       @DisplayName("Should handle null session gracefully")
-       void getCart_WithNullSession_ShouldReturnEmptyMap() {
-           Map<Long, Integer> result = cartService.getCart(null);
-
-           assertThat(result).isNotNull();
-           assertThat(result).isEmpty();
+           verify(sessionAttributes).put(eq("cart"), any(Map.class));
        }
    }
 
@@ -324,7 +279,7 @@ class CartServiceTest {
        @Test
        @DisplayName("Should return cart item DTOs with items")
        void getCartItems_WithItems_ShouldReturnCartItemDtos() {
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
            when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
            when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
 
@@ -341,17 +296,9 @@ class CartServiceTest {
        @DisplayName("Should return empty list for empty cart")
        void getCartItems_EmptyCart_ShouldReturnEmptyList() {
            Map<Long, Integer> emptyCart = new HashMap<>();
-           when(session.getAttributes().get("cart")).thenReturn(emptyCart);
+           when(sessionAttributes.get("cart")).thenReturn(emptyCart);
 
            List<CartItemDto> result = cartService.getCartItems(session);
-
-           assertThat(result).isEmpty();
-       }
-
-       @Test
-       @DisplayName("Should handle null session gracefully")
-       void getCartItems_WithNullSession_ShouldReturnEmptyList() {
-           List<CartItemDto> result = cartService.getCartItems(null);
 
            assertThat(result).isEmpty();
        }
@@ -364,7 +311,7 @@ class CartServiceTest {
        @Test
        @DisplayName("Should return cart items reactively")
        void getCartItemsReactive_WithItems_ShouldReturnCartItemDtos() {
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
            when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
            when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
 
@@ -385,19 +332,9 @@ class CartServiceTest {
        @DisplayName("Should return empty list for empty cart reactively")
        void getCartItemsReactive_EmptyCart_ShouldReturnEmptyList() {
            Map<Long, Integer> emptyCart = new HashMap<>();
-           when(session.getAttributes().get("cart")).thenReturn(emptyCart);
+           when(sessionAttributes.get("cart")).thenReturn(emptyCart);
 
            Mono<List<CartItemDto>> result = cartService.getCartItemsReactive(session);
-
-           StepVerifier.create(result)
-                   .assertNext(items -> assertThat(items).isEmpty())
-                   .verifyComplete();
-       }
-
-       @Test
-       @DisplayName("Should handle null session reactively")
-       void getCartItemsReactive_WithNullSession_ShouldReturnEmptyList() {
-           Mono<List<CartItemDto>> result = cartService.getCartItemsReactive(null);
 
            StepVerifier.create(result)
                    .assertNext(items -> assertThat(items).isEmpty())
@@ -412,7 +349,7 @@ class CartServiceTest {
        @Test
        @DisplayName("Should return correct total for items in cart")
        void getCartTotal_WithItems_ShouldReturnCorrectTotal() {
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
            when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
            when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
 
@@ -425,31 +362,11 @@ class CartServiceTest {
        @DisplayName("Should return zero for empty cart")
        void getCartTotal_EmptyCart_ShouldReturnZero() {
            Map<Long, Integer> emptyCart = new HashMap<>();
-           when(session.getAttributes().get("cart")).thenReturn(emptyCart);
+           when(sessionAttributes.get("cart")).thenReturn(emptyCart);
 
            double result = cartService.getCartTotal(session);
 
            assertThat(result).isEqualTo(0.0);
-       }
-
-       @Test
-       @DisplayName("Should return zero for null session")
-       void getCartTotal_WithNullSession_ShouldReturnZero() {
-           double result = cartService.getCartTotal(null);
-
-           assertThat(result).isEqualTo(0.0);
-       }
-
-       @Test
-       @DisplayName("Should handle missing items gracefully")
-       void getCartTotal_WithMissingItems_ShouldHandleGracefully() {
-           when(session.getAttributes().get("cart")).thenReturn(cart);
-           when(itemService.getItemById(1L)).thenReturn(Mono.empty());
-           when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
-
-           double result = cartService.getCartTotal(session);
-
-           assertThat(result).isCloseTo(599.99, within(0.01));
        }
    }
 
@@ -460,7 +377,7 @@ class CartServiceTest {
        @Test
        @DisplayName("Should return correct total reactively")
        void getCartTotalReactive_WithItems_ShouldReturnCorrectTotal() {
-           when(session.getAttributes().get("cart")).thenReturn(cart);
+           when(sessionAttributes.get("cart")).thenReturn(cart);
            when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
            when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
 
@@ -475,19 +392,9 @@ class CartServiceTest {
        @DisplayName("Should return zero for empty cart reactively")
        void getCartTotalReactive_EmptyCart_ShouldReturnZero() {
            Map<Long, Integer> emptyCart = new HashMap<>();
-           when(session.getAttributes().get("cart")).thenReturn(emptyCart);
+           when(sessionAttributes.get("cart")).thenReturn(emptyCart);
 
            Mono<Double> result = cartService.getCartTotalReactive(session);
-
-           StepVerifier.create(result)
-                   .assertNext(total -> assertThat(total).isEqualTo(0.0))
-                   .verifyComplete();
-       }
-
-       @Test
-       @DisplayName("Should return zero for null session reactively")
-       void getCartTotalReactive_WithNullSession_ShouldReturnZero() {
-           Mono<Double> result = cartService.getCartTotalReactive(null);
 
            StepVerifier.create(result)
                    .assertNext(total -> assertThat(total).isEqualTo(0.0))

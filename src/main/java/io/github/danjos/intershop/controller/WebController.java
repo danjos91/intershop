@@ -7,8 +7,13 @@ import io.github.danjos.intershop.service.ItemService;
 import io.github.danjos.intershop.util.Paging;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.reactive.result.view.Rendering;
 import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Mono;
 
@@ -16,15 +21,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@RestController
+@Controller
 @RequiredArgsConstructor
-@RequestMapping({"/api/main", "/api"})
-public class MainController {
+public class WebController {
     private final ItemService itemService;
     private final CartService cartService;
 
-    @GetMapping({"/", "/items"})
-    public Mono<ResponseEntity<Map<String, Object>>> getItems(
+    @GetMapping({"/", "/main", "/main/items"})
+    public Mono<Rendering> showMainPage(
             @RequestParam(required = false, defaultValue = "NO") String sort,
             @RequestParam(name = "search", required = false, defaultValue = "") String search,
             @RequestParam(name = "pageSize", required = false, defaultValue = "10") int pageSize,
@@ -45,20 +49,35 @@ public class MainController {
                         .map(item -> new CartItemDto(item, cart.getOrDefault(item.getId(), 0)))
                         .collect(Collectors.toList());
 
-                Map<String, Object> response = Map.of(
-                    "items", itemsWithCount,
-                    "search", search,
-                    "paging", paging,
-                    "totalElements", mainPage.getTotalElements(),
-                    "totalPages", mainPage.getTotalPages()
-                );
+                return Rendering.view("main")
+                        .modelAttribute("items", itemsWithCount)
+                        .modelAttribute("search", search)
+                        .modelAttribute("paging", paging)
+                        .build();
+            });
+    }
 
-                return ResponseEntity.ok(response);
+    @GetMapping("/items/{id}")
+    public Mono<Rendering> showItem(@PathVariable Long id, WebSession session) {
+        return Mono.zip(
+                itemService.getItemById(id),
+                Mono.just(cartService.getCart(session))
+            )
+            .map(tuple -> {
+                var item = tuple.getT1();
+                Map<Long, Integer> cart = tuple.getT2();
+                int count = cart.getOrDefault(id, 0);
+                
+                CartItemDto itemWithCount = new CartItemDto(item, count);
+                
+                return Rendering.view("item")
+                        .modelAttribute("item", itemWithCount)
+                        .build();
             });
     }
 
     @PostMapping("/items/{id}")
-    public Mono<ResponseEntity<Map<String, String>>> handleItemAction(
+    public Mono<Rendering> handleItemAction(
             @PathVariable Long id,
             @RequestParam String action,
             WebSession session) {
@@ -72,7 +91,24 @@ public class MainController {
         }
         
         return cartOperation
-            .then(Mono.just(ResponseEntity.ok(Map.of("message", "Item " + action + " successful"))))
-            .onErrorReturn(ResponseEntity.badRequest().body(Map.of("error", "Failed to " + action + " item")));
+            .then(Mono.just(Rendering.redirectTo("/items/" + id).build()));
     }
-}
+
+    @PostMapping("/main/items/{id}")
+    public Mono<Rendering> handleMainItemAction(
+            @PathVariable Long id,
+            @RequestParam String action,
+            WebSession session) {
+
+        Mono<Void> cartOperation = Mono.empty();
+        
+        if ("plus".equals(action)) {
+            cartOperation = cartService.addItemToCartReactive(id, session);
+        } else if ("minus".equals(action)) {
+            cartOperation = cartService.removeItemFromCartReactive(id, session);
+        }
+        
+        return cartOperation
+            .then(Mono.just(Rendering.redirectTo("/main/items").build()));
+    }
+} 

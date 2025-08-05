@@ -7,25 +7,27 @@ import io.github.danjos.intershop.service.CartService;
 import io.github.danjos.intershop.service.OrderService;
 import io.github.danjos.intershop.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.reactive.result.view.Rendering;
 import org.springframework.web.server.WebSession;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
 
-@RestController
+@Controller
 @RequiredArgsConstructor
-@RequestMapping("/api/cart")
-public class CartController {
+public class WebCartController {
     private final CartService cartService;
     private final OrderService orderService;
     private final UserService userService;
 
-    @GetMapping("/items")
-    public Mono<ResponseEntity<Map<String, Object>>> getCart(WebSession session) {
+    @GetMapping("/cart/items")
+    public Mono<Rendering> showCart(WebSession session) {
         return Mono.zip(
                 cartService.getCartItemsReactive(session),
                 cartService.getCartTotalReactive(session),
@@ -36,19 +38,17 @@ public class CartController {
                 Double total = tuple.getT2();
                 User user = tuple.getT3();
                 
-                Map<String, Object> response = Map.of(
-                    "items", items,
-                    "total", total,
-                    "empty", items.isEmpty(),
-                    "user", user
-                );
-
-                return ResponseEntity.ok(response);
+                return Rendering.view("cart")
+                        .modelAttribute("items", items)
+                        .modelAttribute("total", total)
+                        .modelAttribute("empty", items.isEmpty())
+                        .modelAttribute("user", user)
+                        .build();
             });
     }
 
-    @PostMapping("/items/{id}")
-    public Mono<ResponseEntity<Map<String, String>>> handleCartAction(
+    @PostMapping("/cart/items/{id}")
+    public Mono<Rendering> handleCartAction(
             @PathVariable Long id, 
             @RequestParam String action, 
             WebSession session) {
@@ -64,12 +64,11 @@ public class CartController {
         }
         
         return cartOperation
-            .then(Mono.just(ResponseEntity.ok(Map.of("message", "Cart item " + action + " successful"))))
-            .onErrorReturn(ResponseEntity.badRequest().body(Map.of("error", "Failed to " + action + " cart item")));
+            .then(Mono.just(Rendering.redirectTo("/cart/items").build()));
     }
 
     @PostMapping("/buy")
-    public Mono<ResponseEntity<Map<String, Object>>> createOrder(WebSession session) {
+    public Mono<Rendering> createOrder(WebSession session) {
         return Mono.zip(
                 Mono.just(cartService.getCart(session)),
                 userService.getCurrentUser()
@@ -81,14 +80,8 @@ public class CartController {
                 return orderService.createOrderFromCart(cart, user)
                     .map(order -> {
                         session.getAttributes().remove("cart");
-                        Map<String, Object> response = Map.of(
-                            "message", "Order created successfully",
-                            "orderId", order.getId(),
-                            "newOrder", true
-                        );
-                        return ResponseEntity.ok(response);
+                        return Rendering.redirectTo("/orders/" + order.getId() + "?newOrder=true").build();
                     });
-            })
-            .onErrorReturn(ResponseEntity.badRequest().body(Map.of("error", "Failed to create order")));
+            });
     }
-}
+} 

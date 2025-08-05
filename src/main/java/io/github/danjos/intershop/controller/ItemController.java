@@ -3,23 +3,23 @@ package io.github.danjos.intershop.controller;
 import io.github.danjos.intershop.dto.CartItemDto;
 import io.github.danjos.intershop.service.CartService;
 import io.github.danjos.intershop.service.ItemService;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.result.view.Rendering;
+import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
-@Controller
+@RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/items")
 public class ItemController {
     private final ItemService itemService;
     private final CartService cartService;
 
-    @GetMapping("/items/{id}")
-    public Mono<Rendering> showItem(@PathVariable Long id, HttpSession session) {
+    @GetMapping("/{id}")
+    public Mono<ResponseEntity<CartItemDto>> getItem(@PathVariable Long id, WebSession session) {
         return Mono.zip(
                 itemService.getItemById(id),
                 Mono.just(cartService.getCart(session))
@@ -31,17 +31,16 @@ public class ItemController {
                 
                 CartItemDto itemWithCount = new CartItemDto(item, count);
                 
-                return Rendering.view("item")
-                        .modelAttribute("item", itemWithCount)
-                        .build();
-            });
+                return ResponseEntity.ok(itemWithCount);
+            })
+            .onErrorReturn(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/items/{id}")
-    public Mono<Rendering> handleItemAction(
+    @PostMapping("/{id}")
+    public Mono<ResponseEntity<Map<String, String>>> handleItemAction(
             @PathVariable Long id,
             @RequestParam String action,
-            HttpSession session) {
+            WebSession session) {
 
         Mono<Void> cartOperation = Mono.empty();
         
@@ -52,6 +51,7 @@ public class ItemController {
         }
         
         return cartOperation
-            .then(Mono.just(Rendering.redirectTo("/items/" + id).build()));
+            .then(Mono.just(ResponseEntity.ok(Map.of("message", "Item " + action + " successful"))))
+            .onErrorReturn(ResponseEntity.badRequest().body(Map.of("error", "Failed to " + action + " item")));
     }
 }

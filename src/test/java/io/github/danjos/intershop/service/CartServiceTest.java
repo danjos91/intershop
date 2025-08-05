@@ -2,13 +2,13 @@ package io.github.danjos.intershop.service;
 
 import io.github.danjos.intershop.dto.CartItemDto;
 import io.github.danjos.intershop.model.Item;
-import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
@@ -28,7 +28,7 @@ class CartServiceTest {
    private ItemService itemService;
 
    @Mock
-   private HttpSession session;
+   private WebSession session;
 
    @InjectMocks
    private CartService cartService;
@@ -59,60 +59,60 @@ class CartServiceTest {
    @Test
    void addItemToCart_NewItem_ShouldAddToCart() {
        Long itemId = 3L;
-       when(session.getAttribute("cart")).thenReturn(cart);
+       when(session.getAttributes().get("cart")).thenReturn(cart);
 
        cartService.addItemToCart(itemId, session);
 
        assertThat(cart.get(itemId)).isEqualTo(1);
-       verify(session).setAttribute("cart", cart);
+       verify(session.getAttributes()).put("cart", cart);
    }
 
    @Test
    void addItemToCart_ExistingItem_ShouldIncrementQuantity() {
        Long itemId = 1L;
-       when(session.getAttribute("cart")).thenReturn(cart);
+       when(session.getAttributes().get("cart")).thenReturn(cart);
 
        cartService.addItemToCart(itemId, session);
 
        assertThat(cart.get(itemId)).isEqualTo(3);
-       verify(session).setAttribute("cart", cart);
+       verify(session.getAttributes()).put("cart", cart);
    }
 
    @Test
    void addItemToCart_EmptyCart_ShouldCreateNewCartAndUpdateCartAttribute() {
        Long itemId = 1L;
-       when(session.getAttribute("cart")).thenReturn(null);
+       when(session.getAttributes().get("cart")).thenReturn(null);
 
        cartService.addItemToCart(itemId, session);
 
-       verify(session,times(2)).setAttribute(eq("cart"), any(Map.class));
+       verify(session.getAttributes(), times(2)).put(eq("cart"), any(Map.class));
    }
 
    @Test
    void removeItemFromCart_QuantityGreaterThanOne_ShouldDecrementQuantity() {
        Long itemId = 1L;
-       when(session.getAttribute("cart")).thenReturn(cart);
+       when(session.getAttributes().get("cart")).thenReturn(cart);
 
        cartService.removeItemFromCart(itemId, session);
 
        assertThat(cart.get(itemId)).isEqualTo(1);
-       verify(session).setAttribute("cart", cart);
+       verify(session.getAttributes()).put("cart", cart);
    }
 
    @Test
    void removeItemFromCart_QuantityEqualsOne_ShouldRemoveItem() {
        Long itemId = 2L;
-       when(session.getAttribute("cart")).thenReturn(cart);
+       when(session.getAttributes().get("cart")).thenReturn(cart);
 
        cartService.removeItemFromCart(itemId, session);
 
        assertThat(cart).doesNotContainKey(itemId);
-       verify(session).setAttribute("cart", cart);
+       verify(session.getAttributes()).put("cart", cart);
    }
 
    @Test
    void getCart_ExistingCart_ShouldReturnCart() {
-       when(session.getAttribute("cart")).thenReturn(cart);
+       when(session.getAttributes().get("cart")).thenReturn(cart);
 
        Map<Long, Integer> result = cartService.getCart(session);
 
@@ -121,18 +121,18 @@ class CartServiceTest {
 
    @Test
    void getCart_NoCart_ShouldCreateNewCart() {
-       when(session.getAttribute("cart")).thenReturn(null);
+       when(session.getAttributes().get("cart")).thenReturn(null);
 
        Map<Long, Integer> result = cartService.getCart(session);
 
        assertThat(result).isNotNull();
        assertThat(result).isEmpty();
-       verify(session).setAttribute(eq("cart"), any(Map.class));
+       verify(session.getAttributes()).put(eq("cart"), any(Map.class));
    }
 
    @Test
    void getCartItems_WithItems_ShouldReturnCartItemDtos() {
-       when(session.getAttribute("cart")).thenReturn(cart);
+       when(session.getAttributes().get("cart")).thenReturn(cart);
        when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
        when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
 
@@ -147,7 +147,7 @@ class CartServiceTest {
 
    @Test
    void getCartTotal_WithItems_ShouldReturnCorrectTotal() {
-       when(session.getAttribute("cart")).thenReturn(cart);
+       when(session.getAttributes().get("cart")).thenReturn(cart);
        when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
        when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
 
@@ -159,7 +159,7 @@ class CartServiceTest {
    @Test
    void getCartTotal_EmptyCart_ShouldReturnZero() {
        Map<Long, Integer> emptyCart = new HashMap<>();
-       when(session.getAttribute("cart")).thenReturn(emptyCart);
+       when(session.getAttributes().get("cart")).thenReturn(emptyCart);
 
        double result = cartService.getCartTotal(session);
 

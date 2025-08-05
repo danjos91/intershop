@@ -16,20 +16,17 @@
 
 	<properties>
 		<java.version>21</java.version>
-		<boot.version>3.5.4</boot.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
-			<version>${boot.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-r2dbc</artifactId>
-			<version>${boot.version}</version>
 		</dependency>
 
 		<dependency>
@@ -38,12 +35,9 @@
 			<scope>runtime</scope>
 		</dependency>
 
-
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
-			<version>${boot.version}</version>
 		</dependency>
 
 		<dependency>
@@ -55,7 +49,6 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
-			<version>${boot.version}</version>
 			<scope>test</scope>
 		</dependency>
 

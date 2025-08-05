@@ -9,11 +9,13 @@ import io.github.danjos.intershop.service.UserService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.reactive.result.view.Rendering;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -26,36 +28,57 @@ public class CartController {
     private final UserService userService;
 
     @GetMapping("/cart/items")
-    public String showCart(HttpSession session, Model model) {
-        List<CartItemDto> items = cartService.getCartItems(session);
-        model.addAttribute("items", items);
-        model.addAttribute("total", cartService.getCartTotal(session));
-        model.addAttribute("empty", items.isEmpty());
-        return "cart";
+    public Mono<Rendering> showCart(HttpSession session) {
+        return Mono.zip(
+                cartService.getCartItemsReactive(session),
+                cartService.getCartTotalReactive(session),
+                userService.getCurrentUser()
+            )
+            .map(tuple -> {
+                List<CartItemDto> items = tuple.getT1();
+                Double total = tuple.getT2();
+                User user = tuple.getT3();
+                
+                return Rendering.view("cart")
+                        .modelAttribute("items", items)
+                        .modelAttribute("total", total)
+                        .modelAttribute("empty", items.isEmpty())
+                        .modelAttribute("user", user)
+                        .build();
+            });
     }
 
     @PostMapping("/cart/items/{id}")
-    public String handleCartAction(@PathVariable Long id, @RequestParam String action, HttpSession session) {
-
+    public Mono<Rendering> handleCartAction(@PathVariable Long id, @RequestParam String action, HttpSession session) {
+        Mono<Void> cartOperation = Mono.empty();
+        
         if ("plus".equals(action)) {
-            cartService.addItemToCart(id, session);
+            cartOperation = cartService.addItemToCartReactive(id, session);
         } else if ("minus".equals(action)) {
-            cartService.removeItemFromCart(id, session);
+            cartOperation = cartService.removeItemFromCartReactive(id, session);
         } else if ("delete".equals(action)) {
-            Map<Long, Integer> cart = cartService.getCart(session);
-            cart.remove(id);
+            cartOperation = cartService.deleteItemFromCartReactive(id, session);
         }
-        return "redirect:/cart/items";
+        
+        return cartOperation
+            .then(Mono.just(Rendering.redirectTo("/cart/items").build()));
     }
 
     @PostMapping("/buy")
-    public String createOrder(HttpSession session) {
-        Map<Long, Integer> cart = cartService.getCart(session);
-        User user = userService.getCurrentUserBlocking();
-        Order order = orderService.createOrderFromCart(cart, user).block();
-
-        session.removeAttribute("cart");
-
-        return "redirect:/orders/" + order.getId() + "?newOrder=true";
+    public Mono<Rendering> createOrder(HttpSession session) {
+        return Mono.zip(
+                Mono.just(cartService.getCart(session)),
+                userService.getCurrentUser()
+            )
+            .flatMap(tuple -> {
+                Map<Long, Integer> cart = tuple.getT1();
+                User user = tuple.getT2();
+                
+                return orderService.createOrderFromCart(cart, user)
+                    .map(order -> {
+                        session.removeAttribute("cart");
+                        return Rendering.redirectTo("/orders/" + order.getId() + "?newOrder=true").build();
+                    });
+            });
     }
 }

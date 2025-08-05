@@ -36,6 +36,22 @@ public class CartService {
         session.setAttribute("cart", cart);
     }
 
+    public Mono<Void> addItemToCartReactive(Long itemId, HttpSession session) {
+        return Mono.fromRunnable(() -> addItemToCart(itemId, session));
+    }
+
+    public Mono<Void> removeItemFromCartReactive(Long itemId, HttpSession session) {
+        return Mono.fromRunnable(() -> removeItemFromCart(itemId, session));
+    }
+
+    public Mono<Void> deleteItemFromCartReactive(Long itemId, HttpSession session) {
+        return Mono.fromRunnable(() -> {
+            Map<Long, Integer> cart = getCartInternal(session);
+            cart.remove(itemId);
+            session.setAttribute("cart", cart);
+        });
+    }
+
     public synchronized Map<Long, Integer> getCart(HttpSession session) {
         return getCartInternal(session);
     }
@@ -66,6 +82,15 @@ public class CartService {
         return getCartItems(session).stream()
                 .mapToDouble(item -> item.getPrice() * item.getCount())
                 .sum();
+    }
+
+    public Flux<CartItemDto> getCartItemsFlux(HttpSession session) {
+        Map<Long, Integer> cart = getCartInternal(session);
+        return Flux.fromStream(cart.entrySet().stream())
+                .flatMap(entry -> 
+                    itemService.getItemById(entry.getKey())
+                        .map(item -> new CartItemDto(item, entry.getValue()))
+                );
     }
 
     public Mono<List<CartItemDto>> getCartItemsReactive(HttpSession session) {

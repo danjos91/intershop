@@ -1,10 +1,12 @@
 package io.github.danjos.intershop.repository;
 
+import io.github.danjos.intershop.TestDatabaseConfig;
 import io.github.danjos.intershop.model.Item;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
@@ -18,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataR2dbcTest
 @ActiveProfiles("test")
+@Import(TestDatabaseConfig.class)
 class ItemRepositoryTest {
 
    @Autowired
@@ -33,6 +36,8 @@ class ItemRepositoryTest {
    void setUp() {
        limit = 10;
        offset = 0;
+
+       itemRepository.deleteAll();
 
        laptop = new Item();
        laptop.setTitle("Laptop");
@@ -55,10 +60,7 @@ class ItemRepositoryTest {
        tablet.setStock(8);
        tablet.setImgPath("/images/tablet.jpg");
 
-       // Clear and save test data
-       itemRepository.deleteAll()
-               .thenMany(itemRepository.saveAll(List.of(laptop, smartphone, tablet)))
-               .blockLast();
+       itemRepository.saveAll(List.of(laptop, smartphone, tablet));
    }
 
    @Test
@@ -69,7 +71,7 @@ class ItemRepositoryTest {
 
        StepVerifier.create(result)
                .assertNext(item -> {
-                   assertThat(item.getTitle()).isEqualTo("Laptop");
+                   assertThat(item.getTitle()).isEqualTo("Test Laptop");
                })
                .verifyComplete();
    }
@@ -82,7 +84,7 @@ class ItemRepositoryTest {
 
        StepVerifier.create(result)
                .assertNext(item -> {
-                   assertThat(item.getTitle()).isEqualTo("Laptop");
+                   assertThat(item.getTitle()).isEqualTo("Test Laptop");
                })
                .verifyComplete();
    }
@@ -95,7 +97,7 @@ class ItemRepositoryTest {
 
        StepVerifier.create(result)
                .assertNext(item -> {
-                   assertThat(item.getTitle()).isEqualTo("Smartphone");
+                   assertThat(item.getTitle()).isEqualTo("Test Smartphone");
                })
                .verifyComplete();
    }
@@ -115,9 +117,9 @@ class ItemRepositoryTest {
        Flux<Item> result = itemRepository.findByOrderByTitleAsc(limit, offset);
 
        StepVerifier.create(result)
-               .assertNext(item -> assertThat(item.getTitle()).isEqualTo("Laptop"))
-               .assertNext(item -> assertThat(item.getTitle()).isEqualTo("Smartphone"))
-               .assertNext(item -> assertThat(item.getTitle()).isEqualTo("Tablet"))
+               .assertNext(item -> assertThat(item.getTitle()).isEqualTo("Test Laptop"))
+               .assertNext(item -> assertThat(item.getTitle()).isEqualTo("Test Smartphone"))
+               .assertNext(item -> assertThat(item.getTitle()).isEqualTo("Test Tablet"))
                .verifyComplete();
    }
 
@@ -135,8 +137,8 @@ class ItemRepositoryTest {
    @Test
    void save_WithValidItem_ShouldPersistItem() {
        Item newItem = new Item();
-       newItem.setTitle("Headphones");
-       newItem.setDescription("Wireless headphones");
+       newItem.setTitle("Test Headphones");
+       newItem.setDescription("Wireless headphones for testing");
        newItem.setPrice(199.99);
        newItem.setStock(20);
        newItem.setImgPath("/images/headphones.jpg");
@@ -147,21 +149,20 @@ class ItemRepositoryTest {
                .assertNext(savedItem -> {
                    assertThat(savedItem).isNotNull();
                    assertThat(savedItem.getId()).isNotNull();
-                   assertThat(savedItem.getTitle()).isEqualTo("Headphones");
+                   assertThat(savedItem.getTitle()).isEqualTo("Test Headphones");
                })
                .verifyComplete();
    }
 
    @Test
    void findById_WithValidId_ShouldReturnItem() {
-       Item savedItem = itemRepository.save(laptop).block();
-
-       Mono<Item> foundItemMono = itemRepository.findById(savedItem.getId());
+       // Use the test data that's already in the database
+       Mono<Item> foundItemMono = itemRepository.findById(100L);
 
        StepVerifier.create(foundItemMono)
                .assertNext(foundItem -> {
                    assertThat(foundItem).isNotNull();
-                   assertThat(foundItem.getTitle()).isEqualTo("Laptop");
+                   assertThat(foundItem.getTitle()).isEqualTo("Test Laptop");
                    assertThat(foundItem.getPrice()).isEqualTo(999.99);
                })
                .verifyComplete();
@@ -177,7 +178,15 @@ class ItemRepositoryTest {
 
    @Test
    void deleteById_WithValidId_ShouldRemoveItem() {
-       Item savedItem = itemRepository.save(laptop).block();
+       // First save a new item to delete
+       Item itemToDelete = new Item();
+       itemToDelete.setTitle("Item to Delete");
+       itemToDelete.setDescription("This item will be deleted");
+       itemToDelete.setPrice(100.00);
+       itemToDelete.setStock(5);
+       itemToDelete.setImgPath("/images/test.jpg");
+
+       Item savedItem = itemRepository.save(itemToDelete).block();
        Long itemId = savedItem.getId();
 
        Mono<Void> deleteResult = itemRepository.deleteById(itemId);

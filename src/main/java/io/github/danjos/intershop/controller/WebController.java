@@ -6,6 +6,7 @@ import io.github.danjos.intershop.service.CartService;
 import io.github.danjos.intershop.service.ItemService;
 import io.github.danjos.intershop.util.Paging;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class WebController {
     private final ItemService itemService;
     private final CartService cartService;
@@ -54,6 +56,10 @@ public class WebController {
                         .modelAttribute("search", search)
                         .modelAttribute("paging", paging)
                         .build();
+            })
+            .onErrorResume(e -> {
+                log.error("Error in showMainPage", e);
+                return Mono.just(Rendering.redirectTo("/error").build());
             });
     }
 
@@ -73,6 +79,10 @@ public class WebController {
                 return Rendering.view("item")
                         .modelAttribute("item", itemWithCount)
                         .build();
+            })
+            .onErrorResume(e -> {
+                log.error("Error in showItem", e);
+                return Mono.just(Rendering.redirectTo("/error").build());
             });
     }
 
@@ -82,6 +92,8 @@ public class WebController {
             @RequestParam String action,
             WebSession session) {
 
+        log.info("Handling item action: {} for item: {}", action, id);
+        
         Mono<Void> cartOperation = Mono.empty();
         
         if ("plus".equals(action)) {
@@ -91,7 +103,11 @@ public class WebController {
         }
         
         return cartOperation
-            .then(Mono.just(Rendering.redirectTo("/items/" + id).build()));
+            .then(Mono.just(Rendering.redirectTo("/items/" + id).build()))
+            .onErrorResume(e -> {
+                log.error("Error in handleItemAction", e);
+                return Mono.just(Rendering.redirectTo("/items/" + id).build());
+            });
     }
 
     @PostMapping("/main/items/{id}")
@@ -100,6 +116,8 @@ public class WebController {
             @RequestParam String action,
             WebSession session) {
 
+        log.info("Handling main item action: {} for item: {}", action, id);
+        
         Mono<Void> cartOperation = Mono.empty();
         
         if ("plus".equals(action)) {
@@ -109,6 +127,10 @@ public class WebController {
         }
         
         return cartOperation
-            .then(Mono.just(Rendering.redirectTo("/main/items").build()));
+            .then(Mono.just(Rendering.redirectTo("/main/items").build()))
+            .onErrorResume(e -> {
+                log.error("Error in handleMainItemAction", e);
+                return Mono.just(Rendering.redirectTo("/main/items").build());
+            });
     }
 } 

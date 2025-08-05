@@ -55,7 +55,7 @@ This application is built using **reactive programming principles**:
 
 1. Clone the repository:
 ```bash
-  git clone https://github.com/your-repo/intershop.git
+  git clone https://github.com/danjos91/intershop.git
   cd intershop
 ```
 

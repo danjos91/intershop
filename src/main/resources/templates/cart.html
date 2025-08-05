@@ -39,7 +39,7 @@
                     <tr><td th:text="${item.description}"></td></tr>
                     <tr>
                         <td>
-                            <form th:action="${'/cart/items/'+item.id}" method="post">
+                            <form th:action="${'/cart/items/'+item.id}" method="get">
                                 <button name="action" value="minus">-</button>
                                 <span th:text="${item.count}"></span>
                                 <button name="action" value="plus">+</button>

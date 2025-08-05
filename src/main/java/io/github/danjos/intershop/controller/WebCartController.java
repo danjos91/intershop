@@ -53,7 +53,7 @@ public class WebCartController {
             });
     }
 
-    @PostMapping("/cart/items/{id}")
+    @GetMapping("/cart/items/{id}")
     public Mono<Rendering> handleCartAction(
             @PathVariable Long id, 
             @RequestParam String action, 
@@ -67,7 +67,7 @@ public class WebCartController {
             cartOperation = cartService.addItemToCartReactive(id, session);
         } else if ("minus".equals(action)) {
             cartOperation = cartService.removeItemFromCartReactive(id, session);
-        } else if ("delete".equals(action)) {
+        } else if ("deqlete".equals(action)) {
             cartOperation = cartService.deleteItemFromCartReactive(id, session);
         }
         

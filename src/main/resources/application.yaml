@@ -9,13 +9,6 @@ spring:
       initial-size: 5
       max-size: 20
       max-idle-time: 30m
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-      settings:
-        trace: true
-        web-allow-others: true
   sql:
     init:
       mode: always

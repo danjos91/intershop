@@ -123,7 +123,7 @@ class WebCartControllerTest {
         @Test
         @DisplayName("Should handle invalid action")
         void handleCartAction_WithInvalidAction_ShouldHandleGracefully() {
-            webTestClient.post()
+            webTestClient.get()
                     .uri(uriBuilder -> uriBuilder.path("/cart/items/1")
                             .queryParam("action", "invalid")
                             .build())
@@ -134,7 +134,7 @@ class WebCartControllerTest {
         @Test
         @DisplayName("Should handle non-numeric item ID")
         void handleCartAction_WithNonNumericId_ShouldReturnBadRequest() {
-            webTestClient.post()
+            webTestClient.get()
                     .uri(uriBuilder -> uriBuilder.path("/cart/items/invalid")
                             .queryParam("action", "plus")
                             .build())

@@ -17,20 +17,14 @@ import java.util.Map;
 public class CartService {
     private final ItemService itemService;
 
-    public synchronized void addItemToCart(Long itemId, WebSession session) {
-        if (session == null) {
-            return;
-        }
-        Map<Long, Integer> cart = getCartInternal(session);
+    public void addItemToCart(Long itemId, WebSession session) {
+        Map<Long, Integer> cart = getCart(session);
         cart.put(itemId, cart.getOrDefault(itemId, 0) + 1);
         session.getAttributes().put("cart", cart);
     }
 
-    public synchronized void removeItemFromCart(Long itemId, WebSession session) {
-        if (session == null) {
-            return;
-        }
-        Map<Long, Integer> cart = getCartInternal(session);
+    public void removeItemFromCart(Long itemId, WebSession session) {
+        Map<Long, Integer> cart = getCart(session);
         if (cart.containsKey(itemId)) {
             if (cart.get(itemId) > 1) {
                 cart.put(itemId, cart.get(itemId) - 1);
@@ -51,26 +45,13 @@ public class CartService {
 
     public Mono<Void> deleteItemFromCartReactive(Long itemId, WebSession session) {
         return Mono.fromRunnable(() -> {
-            if (session == null) {
-                return;
-            }
-            Map<Long, Integer> cart = getCartInternal(session);
+            Map<Long, Integer> cart = getCart(session);
             cart.remove(itemId);
             session.getAttributes().put("cart", cart);
         });
     }
 
-    public synchronized Map<Long, Integer> getCart(WebSession session) {
-        if (session == null) {
-            return new HashMap<>();
-        }
-        return getCartInternal(session);
-    }
-
-    private Map<Long, Integer> getCartInternal(WebSession session) {
-        if (session == null || session.getAttributes() == null) {
-            return new HashMap<>();
-        }
+    public Map<Long, Integer> getCart(WebSession session) {
         Object cartAttribute = session.getAttributes().get("cart");
         Map<Long, Integer> cart;
         if (cartAttribute instanceof Map) {
@@ -83,10 +64,7 @@ public class CartService {
     }
 
     public Mono<List<CartItemDto>> getCartItemsReactive(WebSession session) {
-        if (session == null) {
-            return Mono.just(new ArrayList<>());
-        }
-        Map<Long, Integer> cart = getCartInternal(session);
+        Map<Long, Integer> cart = getCart(session);
         
         return Flux.fromStream(cart.entrySet().stream())
                 .flatMap(entry -> 

@@ -40,16 +40,12 @@ public class OrderService {
                                         orderItem.setItem(item);
                                         return orderItem;
                                     })
+                                    .flatMap(orderItemRepository::save)
                                     .collectList()
-                                    .flatMap(orderItems -> 
-                                        Flux.fromIterable(orderItems)
-                                            .flatMap(orderItemRepository::save)
-                                            .collectList()
-                                            .map(savedOrderItems -> {
-                                                savedOrder.setItems(savedOrderItems);
-                                                return savedOrder;
-                                            })
-                                    );
+                                    .map(savedOrderItems -> {
+                                        savedOrder.setItems(savedOrderItems);
+                                        return savedOrder;
+                                    });
                 });
     }
 

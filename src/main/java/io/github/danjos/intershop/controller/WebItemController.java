@@ -1,19 +1,15 @@
 package io.github.danjos.intershop.controller;
 
 import io.github.danjos.intershop.dto.CartItemDto;
-import io.github.danjos.intershop.model.Item;
 import io.github.danjos.intershop.service.CartService;
 import io.github.danjos.intershop.service.ItemService;
-import io.github.danjos.intershop.util.Paging;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.reactive.result.view.Rendering;
 import org.springframework.web.server.WebSession;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import reactor.core.publisher.Mono;

@@ -1,11 +1,9 @@
 package io.github.danjos.intershop.service;
 
 import io.github.danjos.intershop.dto.CartItemDto;
-import io.github.danjos.intershop.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.WebSession;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -14,7 +12,6 @@ import java.util.*;
 @RequiredArgsConstructor
 public class CartService {
     private final ItemService itemService;
-    private final ItemRepository itemRepository;
 
     public void addItemToCart(Long itemId, WebSession session) {
         Map<Long, Integer> cart = getCart(session);

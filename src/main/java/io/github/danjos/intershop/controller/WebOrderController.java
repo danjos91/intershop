@@ -1,7 +1,5 @@
 package io.github.danjos.intershop.controller;
 
-import io.github.danjos.intershop.model.Order;
-import io.github.danjos.intershop.model.User;
 import io.github.danjos.intershop.service.OrderService;
 import io.github.danjos.intershop.service.UserService;
 import lombok.RequiredArgsConstructor;

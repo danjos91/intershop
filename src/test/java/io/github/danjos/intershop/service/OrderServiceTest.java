@@ -19,9 +19,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -83,8 +81,7 @@ class OrderServiceTest {
        @Test
        @DisplayName("Should create order with valid items")
        void createOrderFromCart_WithValidItems_ShouldCreateOrder() {
-           when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
-           when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
+           when(itemService.getItemByIds(any())).thenReturn(Flux.fromIterable(Arrays.asList(laptop, smartphone)));
            when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
                Order savedOrder = invocation.getArgument(0);
                savedOrder.setId(1L);
@@ -120,7 +117,7 @@ class OrderServiceTest {
                    })
                    .verifyComplete();
 
-           verify(itemService, times(2)).getItemById(any());
+           verify(itemService).getItemByIds(any());
            verify(orderRepository).save(any(Order.class));
            verify(orderItemRepository, times(2)).save(any(OrderItem.class));
        }
@@ -129,6 +126,7 @@ class OrderServiceTest {
        @DisplayName("Should create empty order when cart is empty")
        void createOrderFromCart_EmptyCart_ShouldCreateEmptyOrder() {
            Map<Long, Integer> emptyCart = new HashMap<>();
+           when(itemService.getItemByIds(any())).thenReturn(Flux.empty());
            when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
 
            Mono<Order> resultMono = orderService.createOrderFromCart(emptyCart, user);
@@ -146,8 +144,7 @@ class OrderServiceTest {
        @Test
        @DisplayName("Should calculate correct total for order")
        void createOrderFromCart_ShouldCalculateCorrectTotal() {
-           when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
-           when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
+           when(itemService.getItemByIds(any())).thenReturn(Flux.fromIterable(Arrays.asList(laptop, smartphone)));
            when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
                Order savedOrder = invocation.getArgument(0);
                savedOrder.setId(1L);
@@ -172,8 +169,7 @@ class OrderServiceTest {
        @Test
        @DisplayName("Should handle missing items gracefully")
        void createOrderFromCart_WithMissingItems_ShouldHandleGracefully() {
-           when(itemService.getItemById(1L)).thenReturn(Mono.empty());
-           when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
+           when(itemService.getItemByIds(any())).thenReturn(Flux.fromIterable(Arrays.asList(smartphone))); // Only return smartphone, laptop is missing
            when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
                Order savedOrder = invocation.getArgument(0);
                savedOrder.setId(1L);
@@ -207,13 +203,15 @@ class OrderServiceTest {
            Flux<Order> expectedOrders = Flux.just(order);
            when(orderRepository.findByUserId(user.getId())).thenReturn(expectedOrders);
            when(orderItemRepository.findByOrderId(order.getId())).thenReturn(Flux.empty());
+           when(itemService.getItemByIds(any())).thenReturn(Flux.empty());
 
            Flux<Order> resultFlux = orderService.getUserOrders(user);
 
            StepVerifier.create(resultFlux)
                    .assertNext(result -> {
                        assertThat(result).isNotNull();
-                       assertThat(result).isEqualTo(order);
+                       assertThat(result.getId()).isEqualTo(order.getId());
+                       assertThat(result.getItems()).isEmpty();
                    })
                    .verifyComplete();
 
@@ -257,6 +255,7 @@ class OrderServiceTest {
            Long orderId = 1L;
            when(orderRepository.findById(orderId)).thenReturn(Mono.just(order));
            when(orderItemRepository.findByOrderId(orderId)).thenReturn(Flux.empty());
+           when(itemService.getItemByIds(any())).thenReturn(Flux.empty());
 
            Mono<Order> resultMono = orderService.getOrderById(orderId);
 
@@ -264,6 +263,7 @@ class OrderServiceTest {
                    .assertNext(result -> {
                        assertThat(result).isNotNull();
                        assertThat(result.getId()).isEqualTo(orderId);
+                       assertThat(result.getItems()).isEmpty();
                    })
                    .verifyComplete();
 

@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Set;
+
 @Repository
 public interface ItemRepository extends R2dbcRepository<Item, Long> {
     @Query("SELECT * FROM items WHERE LOWER(title) LIKE LOWER(CONCAT('%', :title, '%')) LIMIT :limit OFFSET :offset")
@@ -32,4 +34,7 @@ public interface ItemRepository extends R2dbcRepository<Item, Long> {
 
     @Query("SELECT COUNT(*) FROM items")
     Mono<Long> countAll();
+
+    @Query("SELECT * FROM items WHERE id IN (:ids)")
+    Flux<Item> findAllItemsByIds(Set<Long> ids);
 }

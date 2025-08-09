@@ -13,6 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 public class ItemService {
@@ -53,4 +56,10 @@ public class ItemService {
         return itemRepository.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundException("Item with id " + id + " not found")));
     }
+
+    public Flux<Item> getItemByIds(Set<Long> ids) {
+        return itemRepository.findAllById(ids)
+                .switchIfEmpty(Mono.error(new NotFoundException("Items with ids: " + ids + " not found")));
+    }
+
 }

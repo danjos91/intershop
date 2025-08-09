@@ -11,12 +11,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.WebSession;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
@@ -279,8 +278,7 @@ class CartServiceTest {
        @DisplayName("Should return cart items reactively")
        void getCartItemsReactive_WithItems_ShouldReturnCartItemDtos() {
            when(sessionAttributes.get("cart")).thenReturn(cart);
-           when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
-           when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
+           when(itemService.getItemByIds(any())).thenReturn(Flux.fromIterable(Arrays.asList(laptop, smartphone)));
 
            Mono<List<CartItemDto>> result = cartService.getCartItemsReactive(session);
 
@@ -300,6 +298,7 @@ class CartServiceTest {
        void getCartItemsReactive_EmptyCart_ShouldReturnEmptyList() {
            Map<Long, Integer> emptyCart = new HashMap<>();
            when(sessionAttributes.get("cart")).thenReturn(emptyCart);
+           when(itemService.getItemByIds(any())).thenReturn(Flux.empty());
 
            Mono<List<CartItemDto>> result = cartService.getCartItemsReactive(session);
 
@@ -317,8 +316,7 @@ class CartServiceTest {
        @DisplayName("Should return correct total reactively")
        void getCartTotalReactive_WithItems_ShouldReturnCorrectTotal() {
            when(sessionAttributes.get("cart")).thenReturn(cart);
-           when(itemService.getItemById(1L)).thenReturn(Mono.just(laptop));
-           when(itemService.getItemById(2L)).thenReturn(Mono.just(smartphone));
+           when(itemService.getItemByIds(any())).thenReturn(Flux.fromIterable(Arrays.asList(laptop, smartphone)));
 
            Mono<Double> result = cartService.getCartTotalReactive(session);
 
@@ -332,6 +330,7 @@ class CartServiceTest {
        void getCartTotalReactive_EmptyCart_ShouldReturnZero() {
            Map<Long, Integer> emptyCart = new HashMap<>();
            when(sessionAttributes.get("cart")).thenReturn(emptyCart);
+           when(itemService.getItemByIds(any())).thenReturn(Flux.empty());
 
            Mono<Double> result = cartService.getCartTotalReactive(session);
 

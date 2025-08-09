@@ -1,21 +1,20 @@
 package io.github.danjos.intershop.service;
 
 import io.github.danjos.intershop.dto.CartItemDto;
+import io.github.danjos.intershop.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class CartService {
     private final ItemService itemService;
+    private final ItemRepository itemRepository;
 
     public void addItemToCart(Long itemId, WebSession session) {
         Map<Long, Integer> cart = getCart(session);
@@ -65,13 +64,11 @@ public class CartService {
 
     public Mono<List<CartItemDto>> getCartItemsReactive(WebSession session) {
         Map<Long, Integer> cart = getCart(session);
+
+        Set<Long> ids =  cart.isEmpty() ? new HashSet<>() : cart.keySet();
         
-        return Flux.fromStream(cart.entrySet().stream())
-                .flatMap(entry -> 
-                    itemService.getItemById(entry.getKey())
-                        .map(item -> new CartItemDto(item, entry.getValue()))
-                )
-                .collectList();
+        return itemService.getItemByIds(ids)
+                .map(item -> new CartItemDto(item, cart.getOrDefault(item.getId(), 0))).collectList();
     }
 
     public Mono<Double> getCartTotalReactive(WebSession session) {

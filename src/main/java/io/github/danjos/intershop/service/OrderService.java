@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -24,52 +25,54 @@ public class OrderService {
         order.setUserId(user.getId());
         order.setOrderDate(LocalDateTime.now());
         order.setStatus("PROCESSING");
+        Set<Long> itemIds = cartItems.keySet();
 
         return orderRepository.save(order)
-                .flatMap(savedOrder -> 
-                    Flux.fromStream(cartItems.entrySet().stream())
-                        .flatMap(entry -> 
-                            itemService.getItemById(entry.getKey())
-                                .map(item -> {
-                                    OrderItem orderItem = new OrderItem();
-                                    orderItem.setOrderId(savedOrder.getId());
-                                    orderItem.setItemId(item.getId());
-                                    orderItem.setQuantity(entry.getValue());
-                                    orderItem.setPrice(item.getPrice());
-                                    orderItem.setOrder(savedOrder);
-                                    orderItem.setItem(item);
-                                    return orderItem;
-                                })
-                        )
-                        .collectList()
-                        .flatMap(orderItems -> 
-                            Flux.fromIterable(orderItems)
-                                .flatMap(orderItemRepository::save)
-                                .collectList()
-                                .map(savedOrderItems -> {
-                                    savedOrder.setItems(savedOrderItems);
-                                    return savedOrder;
-                                })
-                        )
-                );
+                .flatMap(savedOrder -> {
+                    return itemService.getItemByIds(itemIds)
+                            .map(item -> {
+                                        OrderItem orderItem = new OrderItem();
+                                        orderItem.setOrderId(savedOrder.getId());
+                                        orderItem.setItemId(item.getId());
+                                        orderItem.setQuantity(cartItems.get(item.getId()));
+                                        orderItem.setPrice(item.getPrice());
+                                        orderItem.setOrder(savedOrder);
+                                        orderItem.setItem(item);
+                                        return orderItem;
+                                    })
+                                    .collectList()
+                                    .flatMap(orderItems -> 
+                                        Flux.fromIterable(orderItems)
+                                            .flatMap(orderItemRepository::save)
+                                            .collectList()
+                                            .map(savedOrderItems -> {
+                                                savedOrder.setItems(savedOrderItems);
+                                                return savedOrder;
+                                            })
+                                    );
+                });
     }
 
     public Flux<Order> getUserOrders(User user) {
         return orderRepository.findByUserId(user.getId())
                 .flatMap(order -> 
                     orderItemRepository.findByOrderId(order.getId())
-                        .flatMap(orderItem -> 
-                            itemService.getItemById(orderItem.getItemId())
-                                .map(item -> {
-                                    orderItem.setItem(item);
-                                    orderItem.setOrder(order);
-                                    return orderItem;
-                                })
-                        )
                         .collectList()
-                        .map(orderItems -> {
-                            order.setItems(orderItems);
-                            return order;
+                        .flatMap(orderItems -> {
+                            Set<Long> itemIds = orderItems.stream()
+                                    .map(OrderItem::getItemId)
+                                    .collect(Collectors.toSet());
+                            
+                            return itemService.getItemByIds(itemIds)
+                                    .collectMap(Item::getId)
+                                    .map(itemMap -> {
+                                        orderItems.forEach(orderItem -> {
+                                            orderItem.setItem(itemMap.get(orderItem.getItemId()));
+                                            orderItem.setOrder(order);
+                                        });
+                                        order.setItems(orderItems);
+                                        return order;
+                                    });
                         })
                 );
     }
@@ -79,18 +82,22 @@ public class OrderService {
                 .switchIfEmpty(Mono.error(new NotFoundException("Order with id " + id + " not found")))
                 .flatMap(order -> 
                     orderItemRepository.findByOrderId(order.getId())
-                        .flatMap(orderItem -> 
-                            itemService.getItemById(orderItem.getItemId())
-                                .map(item -> {
-                                    orderItem.setItem(item);
-                                    orderItem.setOrder(order);
-                                    return orderItem;
-                                })
-                        )
                         .collectList()
-                        .map(orderItems -> {
-                            order.setItems(orderItems);
-                            return order;
+                        .flatMap(orderItems -> {
+                            Set<Long> itemIds = orderItems.stream()
+                                    .map(OrderItem::getItemId)
+                                    .collect(Collectors.toSet());
+                            
+                            return itemService.getItemByIds(itemIds)
+                                    .collectMap(Item::getId)
+                                    .map(itemMap -> {
+                                        orderItems.forEach(orderItem -> {
+                                            orderItem.setItem(itemMap.get(orderItem.getItemId()));
+                                            orderItem.setOrder(order);
+                                        });
+                                        order.setItems(orderItems);
+                                        return order;
+                                    });
                         })
                 );
     }

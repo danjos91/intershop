@@ -51,50 +51,33 @@ public class OrderService {
 
     public Flux<Order> getUserOrders(User user) {
         return orderRepository.findByUserId(user.getId())
-                .flatMap(order -> 
-                    orderItemRepository.findByOrderId(order.getId())
-                        .collectList()
-                        .flatMap(orderItems -> {
-                            Set<Long> itemIds = orderItems.stream()
-                                    .map(OrderItem::getItemId)
-                                    .collect(Collectors.toSet());
-                            
-                            return itemService.getItemByIds(itemIds)
-                                    .collectMap(Item::getId)
-                                    .map(itemMap -> {
-                                        orderItems.forEach(orderItem -> {
-                                            orderItem.setItem(itemMap.get(orderItem.getItemId()));
-                                            orderItem.setOrder(order);
-                                        });
-                                        order.setItems(orderItems);
-                                        return order;
-                                    });
-                        })
-                );
+                .flatMap(this::populateOrderWithItems);
     }
 
     public Mono<Order> getOrderById(Long id) {
         return orderRepository.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundException("Order with id " + id + " not found")))
-                .flatMap(order -> 
-                    orderItemRepository.findByOrderId(order.getId())
-                        .collectList()
-                        .flatMap(orderItems -> {
-                            Set<Long> itemIds = orderItems.stream()
-                                    .map(OrderItem::getItemId)
-                                    .collect(Collectors.toSet());
-                            
-                            return itemService.getItemByIds(itemIds)
-                                    .collectMap(Item::getId)
-                                    .map(itemMap -> {
-                                        orderItems.forEach(orderItem -> {
-                                            orderItem.setItem(itemMap.get(orderItem.getItemId()));
-                                            orderItem.setOrder(order);
-                                        });
-                                        order.setItems(orderItems);
-                                        return order;
-                                    });
-                        })
-                );
+                .flatMap(this::populateOrderWithItems);
+    }
+
+    private Mono<Order> populateOrderWithItems(Order order) {
+        return orderItemRepository.findByOrderId(order.getId())
+                .collectList()
+                .flatMap(orderItems -> {
+                    Set<Long> itemIds = orderItems.stream()
+                            .map(OrderItem::getItemId)
+                            .collect(Collectors.toSet());
+                    
+                    return itemService.getItemByIds(itemIds)
+                            .collectMap(Item::getId)
+                            .map(itemMap -> {
+                                orderItems.forEach(orderItem -> {
+                                    orderItem.setItem(itemMap.get(orderItem.getItemId()));
+                                    orderItem.setOrder(order);
+                                });
+                                order.setItems(orderItems);
+                                return order;
+                            });
+                });
     }
 }

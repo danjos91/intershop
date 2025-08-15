@@ -73,9 +73,15 @@ This application is built using **reactive programming principles**:
 # Build the executable JAR
   mvn clean package
 
+# Запустить Redis
+docker-compose up -d
+
 # Run the application
   mvn spring-boot:run
-```
+
+# Проверить кеш
+  redis-cli keys "*"
+``` 
 
 ## 🌐 Access the Application
 

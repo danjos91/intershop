@@ -16,6 +16,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -26,7 +29,7 @@ public class ItemService {
     private final ReactiveRedisTemplate<String, Object> redisTemplate;
     
     private static final String ITEM_CACHE_PREFIX = "item:";
-    private static final Duration CACHE_TTL = Duration.ofMinutes(1);
+    private static final Duration CACHE_TTL = Duration.ofMinutes(5);
 
     @Transactional(readOnly = true)
     public Mono<Page<Item>> searchItems(String query, int pageNumber, int pageSize, String sort) {
@@ -80,8 +83,49 @@ public class ItemService {
     }
 
     public Flux<Item> getItemByIds(Set<Long> ids) {
+        // First, try to get all items from cache
         return Flux.fromIterable(ids)
-                .flatMap(this::getItemById);
+            .flatMap(id -> {
+                String cacheKey = ITEM_CACHE_PREFIX + id;
+                return redisTemplate.opsForValue().get(cacheKey)
+                    .map(cachedItem -> (Item) cachedItem);
+                    //.defaultIfEmpty(null); // Return null if not in cache
+            })
+            .collectList()
+            .flatMapMany(cachedItems -> {
+                // Find which items are missing from cache
+                Set<Long> missingIds = new HashSet<>();
+                List<Item> result = new ArrayList<>();
+                
+                for (int i = 0; i < ids.size(); i++) {
+                    if (!cachedItems.isEmpty() && cachedItems.get(i) != null) {
+                        result.add(cachedItems.get(i));
+                    } else {
+                        missingIds.add(ids.toArray(new Long[0])[i]);
+                    }
+                }
+                
+                if (missingIds.isEmpty()) {
+                    // All items were in cache
+                    return Flux.fromIterable(result);
+                } else {
+                    // Fetch missing items from database in ONE query
+                    return itemRepository.findAllItemsByIds(missingIds)
+                        .flatMap(item -> {
+                            // Cache the newly fetched item
+                            String cacheKey = ITEM_CACHE_PREFIX + item.getId();
+                            return redisTemplate.opsForValue()
+                                .set(cacheKey, item, CACHE_TTL)
+                                .thenReturn(item);
+                        })
+                        .collectList()
+                        .flatMapMany(missingItems -> {
+                            // Combine cached and newly fetched items
+                            result.addAll(missingItems);
+                            return Flux.fromIterable(result);
+                        });
+                }
+            });
     }
     
     public Mono<Void> clearItemCache(Long itemId) {

@@ -1,6 +1,16 @@
 spring:
   application:
     name: intershop
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
   r2dbc:
     url: r2dbc:h2:mem:///shopdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa

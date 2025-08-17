@@ -70,6 +70,9 @@ This application is built using **reactive programming principles**:
 
 3. **Option B: Run Locally**
 ```bash
+# Start redis
+  #docker run -d --name intershop-redis -p 6379:6379 redis:7-alpine
+  docker run --name redis-server -it --rm -p 6379:6379 redis:7.4.2-bookworm sh -c "redis-server & sleep 7 && redis-cli"
 # Build the executable JAR
   mvn clean package
 

@@ -1,5 +1,6 @@
 package io.github.danjos.intershop.service;
 
+import io.github.danjos.intershop.dto.SearchResultCache;
 import io.github.danjos.intershop.exception.NotFoundException;
 import io.github.danjos.intershop.model.Item;
 import io.github.danjos.intershop.repository.ItemRepository;
@@ -11,7 +12,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -31,8 +31,28 @@ public class ItemService {
     private static final String ITEM_CACHE_PREFIX = "item:";
     private static final Duration CACHE_TTL = Duration.ofMinutes(5);
 
-    @Transactional(readOnly = true)
     public Mono<Page<Item>> searchItems(String query, int pageNumber, int pageSize, String sort) {
+        String cacheKey = String.format("search:%s:%d:%d:%s", 
+            query != null ? query : "NO", pageNumber, pageSize, sort != null ? sort : "DEFAULT");
+        
+        return redisTemplate.opsForValue().get(cacheKey)
+            .map(cachedSearchData -> {
+                log.info("Cache hit for search: {}", cacheKey);
+                return ((SearchResultCache) cachedSearchData).toPage();
+            })
+            .switchIfEmpty(
+                performSearch(query, pageNumber, pageSize, sort)
+                    .flatMap(page -> {
+                        log.info("Cache miss for search: {}, storing in cache", cacheKey);
+                        SearchResultCache cacheData = SearchResultCache.fromPage(page);
+                        return redisTemplate.opsForValue()
+                            .set(cacheKey, cacheData, CACHE_TTL)
+                            .thenReturn(page);
+                    })
+            );
+    }
+
+    public Mono<Page<Item>> performSearch(String query, int pageNumber, int pageSize, String sort) {
         Pageable pageable = PageRequest.of(pageNumber - 1, pageSize);
         int limit = pageable.getPageSize();
         int offset = (int) pageable.getOffset();
@@ -138,6 +158,19 @@ public class ItemService {
         log.info("Clearing all item cache");
         return redisTemplate.keys(ITEM_CACHE_PREFIX + "*")
                 .flatMap(redisTemplate::delete)
+                .then();
+    }
+    
+    public Mono<Void> clearSearchCache() {
+        log.info("Clearing all search cache");
+        return redisTemplate.keys("search:*")
+                .flatMap(redisTemplate::delete)
+                .then();
+    }
+    
+    public Mono<Void> clearAllCache() {
+        log.info("Clearing all cache");
+        return Mono.zip(clearAllItemCache(), clearSearchCache())
                 .then();
     }
 

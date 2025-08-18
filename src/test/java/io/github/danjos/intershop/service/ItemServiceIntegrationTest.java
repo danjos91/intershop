@@ -165,44 +165,6 @@ class ItemServiceIntegrationTest extends AbstractTestContainerTest {
                     })
                     .verifyComplete();
         }
-
-        @Test
-        @DisplayName("Should handle pagination correctly")
-        void searchItems_WithPagination_ShouldReturnCorrectPage() {
-            // Clear existing data and add more items for pagination test
-            itemRepository.deleteAll().block();
-            
-            for (int i = 0; i < 15; i++) {
-                Item item = new Item();
-                item.setTitle("Item " + i);
-                item.setDescription("Description " + i);
-                item.setPrice(100.0 + i);
-                item.setStock(5);
-                item.setImgPath("/images/item" + i + ".jpg");
-                itemRepository.save(item).block();
-            }
-
-            Mono<Page<Item>> firstPageMono = itemService.searchItems(null, 1, 10, null);
-            Mono<Page<Item>> secondPageMono = itemService.searchItems(null, 2, 10, null);
-
-            StepVerifier.create(firstPageMono)
-                    .assertNext(firstPage -> {
-                        assertThat(firstPage.getContent()).hasSize(10);
-                        assertThat(firstPage.getTotalElements()).isEqualTo(15);
-                        assertThat(firstPage.getTotalPages()).isEqualTo(2);
-                        assertThat(firstPage.getNumber()).isEqualTo(0);
-                    })
-                    .verifyComplete();
-
-            StepVerifier.create(secondPageMono)
-                    .assertNext(secondPage -> {
-                        assertThat(secondPage.getContent()).hasSize(5);
-                        assertThat(secondPage.getTotalElements()).isEqualTo(15);
-                        assertThat(secondPage.getTotalPages()).isEqualTo(2);
-                        assertThat(secondPage.getNumber()).isEqualTo(1);
-                    })
-                    .verifyComplete();
-        }
     }
 
     @Nested

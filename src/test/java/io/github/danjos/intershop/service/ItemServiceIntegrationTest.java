@@ -1,5 +1,6 @@
 package io.github.danjos.intershop.service;
 
+import io.github.danjos.intershop.AbstractTestContainerTest;
 import io.github.danjos.intershop.model.Item;
 import io.github.danjos.intershop.repository.ItemRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("ItemService Integration Tests")
-class ItemServiceIntegrationTest {
+class ItemServiceIntegrationTest extends AbstractTestContainerTest {
 
     @Autowired
     private ItemService itemService;

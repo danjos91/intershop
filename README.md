@@ -1,73 +1,106 @@
-# Intershop E-commerce Application with Payment Service
+# Multi-Project: Intershop + Payment Service
 
-This project consists of two applications:
+This is a multi-project Maven setup containing two microservices:
 
-1. **Intershop** - A reactive e-commerce application with H2 database, Redis caching, and testcontainers
-2. **Payment Service** - A RESTful payment service that handles account balance and payment processing
+## Project Structure
 
-## Architecture
+```
+multiproject/
+├── pom.xml                 # Parent POM (this file)
+├── intershop/             # Main e-commerce service
+└── payment-service/       # Payment processing service
+```
 
-The system follows a microservices architecture where:
-- Intershop handles the e-commerce functionality (items, cart, orders)
-- Payment Service manages account balance and payment processing
-- Intershop communicates with Payment Service via HTTP to check balance and process payments
+## Services
 
-## Prerequisites
+### Intershop Service
+- **Location**: `intershop/`
+- **Description**: Main e-commerce application with cart, items, orders, and user management
+- **Port**: 8080 (default)
+- **Features**: 
+  - Product catalog
+  - Shopping cart
+  - Order management
+  - User authentication
+  - Redis caching
 
+### Payment Service
+- **Location**: `payment-service/`
+- **Description**: Dedicated payment processing service
+- **Port**: 8081 (default)
+- **Features**:
+  - Payment processing
+  - Balance management
+  - REST API for payment operations
+
+## Quick Start
+
+### Prerequisites
 - Java 21
-- Maven
-- Docker
+- Maven 3.6+
+- Docker (for Redis and database containers)
 
-## Running the Applications
-
-### 1. Start Redis (Required for Intershop)
-
+### Building All Services
 ```bash
-docker run -d --name redis -p 6379:6379 redis:7-alpine
+# Build all services from the root directory
+mvn clean install
 ```
 
-### 2. Start Payment Service
+### Running Individual Services
 
-```bash
-cd payment-service
-mvn spring-boot:run
-```
-
-The Payment Service will start on port 8081.
-
-### 3. Start Intershop Application
-
+#### Intershop Service
 ```bash
 cd intershop
 mvn spring-boot:run
 ```
 
-The Intershop application will start on port 8080.
+#### Payment Service
+```bash
+cd payment-service
+mvn spring-boot:run
+```
 
-### Intershop Application (Port 8080)
+### Running All Services
+```bash
+# From the root directory, you can run both services
+mvn -pl intershop spring-boot:run &
+mvn -pl payment-service spring-boot:run &
+```
 
-- Main page: http://localhost:8080/main/items
-- Cart: http://localhost:8080/cart/items
-- Orders: http://localhost:8080/orders
+## Development
 
-## Payment Flow
+### Adding New Services
+1. Create a new directory for your service
+2. Add the service as a module in the parent `pom.xml`
+3. Ensure your service follows the same groupId structure
 
-1. User adds items to cart
-2. Cart page checks account balance via Payment Service
-3. If balance is sufficient, checkout button is enabled
-4. When checkout is clicked:
-   - Payment is processed via Payment Service
-   - If payment succeeds, order is created
-   - If payment fails, user is redirected to cart with error message
+### Common Dependencies
+The parent POM manages common dependency versions for:
+- Spring Boot 3.2.0
+- Spring Cloud 2023.0.0
+- Java 17
 
-## Configuration
+## API Endpoints
 
-### Payment Service Configuration
-- Initial balance: 1000.00 RUB (configurable in `application.properties`)
-- Currency: RUB
-- Port: 8081
+### Intershop Service
+- Main application: http://localhost:8080
+- API endpoints: http://localhost:8080/api/*
 
-### Intershop Configuration
-- Payment service URL: http://localhost:8081
-- Port: 8080
-- Redis: localhost:6379
+### Payment Service
+- API specification: http://localhost:8081/v3/api-docs
+- Swagger UI: http://localhost:8081/swagger-ui.html
+
+## Testing
+
+```bash
+# Run tests for all services
+mvn test
+
+# Run tests for specific service
+mvn -pl intershop test
+mvn -pl payment-service test
+```
+
+## Docker Support
+
+Both services include Docker support for containerized deployment. See individual service directories for Docker-specific instructions.

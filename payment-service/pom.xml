@@ -4,10 +4,10 @@
     <modelVersion>4.0.0</modelVersion>
     
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.3</version>
-        <relativePath/>
+        <groupId>io.github.danjos</groupId>
+        <artifactId>multiproject</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     
     <groupId>io.github.danjos</groupId>

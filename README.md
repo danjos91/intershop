@@ -1,106 +1,124 @@
 # Multi-Project: Intershop + Payment Service
 
-This is a multi-project Maven setup containing two microservices:
+![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![Spring WebFlux](https://img.shields.io/badge/Spring_WebFlux-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![Maven](https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apache-maven&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 
-## Project Structure
+## 🏗️ Project Architecture
+
+This is a **multi-project Maven setup** containing two microservices that work together to provide a complete e-commerce solution:
 
 ```
 multiproject/
-├── pom.xml                 # Parent POM (this file)
-├── intershop/             # Main e-commerce service
-└── payment-service/       # Payment processing service
+├── pom.xml                 # Parent POM managing both services
+├── README.md              # This comprehensive documentation
+├── docker-compose.yml     # Complete service orchestration
+├── intershop/            # Main e-commerce service (Java 21)
+└── payment-service/      # Payment processing service (Java 21)
 ```
 
-## Services
+## 🚀 Technology Stack
 
-### Intershop Service
-- **Location**: `intershop/`
-- **Description**: Main e-commerce application with cart, items, orders, and user management
-- **Port**: 8080 (default)
-- **Features**: 
-  - Product catalog
-  - Shopping cart
-  - Order management
-  - User authentication
-  - Redis caching
+### Backend Services
+- **Java 21** - Core programming languages (different versions per service)
+- **Spring Boot 3.x** - Modern application framework
+- **Spring WebFlux** - Reactive web framework for high performance
+- **Spring Data R2DBC** - Reactive database access (Intershop)
+- **Project Reactor** - Reactive programming foundation
+- **Lombok** - Code reduction and boilerplate elimination
+- **Maven** - Centralized dependency and build management
 
-### Payment Service
-- **Location**: `payment-service/`
-- **Description**: Dedicated payment processing service
-- **Port**: 8081 (default)
-- **Features**:
-  - Payment processing
-  - Balance management
-  - REST API for payment operations
+### Infrastructure & Data
+- **Redis** - High-performance caching and session storage
+- **H2 Database** - Lightweight, embedded database for development
+- **Docker** - Containerized deployment and development
+- **Docker Compose** - Multi-service orchestration
 
-## Quick Start
+### API & Integration
+- **RESTful APIs** - HTTP-based service communication
+- **OpenAPI 3.0** - API specification and documentation (Payment Service)
+- **Thymeleaf** - Server-side templating (Intershop)
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Java 21
-- Maven 3.6+
-- Docker (for Redis and database containers)
+- **Java 21** - Core programming language for both services
+- **Maven 3.6+** for build management
+- **Docker & Docker Compose** for containerized deployment
+- **Git** for version control
 
-### Building All Services
+### Quick Start with Docker Compose (Recommended)
+
+1. **Clone the repository:**
 ```bash
-# Build all services from the root directory
-mvn clean install
+  git clone https://github.com/danjos91/multiproject.git
+  cd multiproject
 ```
 
-### Running Individual Services
+2. **Start all services:**
+```bash
+  docker-compose up -d
+```
 
-#### Intershop Service
+### Alternative: Manual Setup
+
+#### Build All Services
+```bash
+# Build everything from the root directory
+mvn clean install -DskipTests
+```
+
+#### Run Individual Services
+
+**Intershop Service:**
 ```bash
 cd intershop
 mvn spring-boot:run
 ```
 
-#### Payment Service
+**Payment Service:**
 ```bash
 cd payment-service
 mvn spring-boot:run
 ```
 
-### Running All Services
+#### Run from Multi-Project Root
 ```bash
-# From the root directory, you can run both services
-mvn -pl intershop spring-boot:run &
-mvn -pl payment-service spring-boot:run &
+# Run both services simultaneously
+  mvn -pl intershop spring-boot:run &
+  mvn -pl payment-service spring-boot:run &
 ```
 
-## Development
+## 🧪 Testing
 
-### Adding New Services
-1. Create a new directory for your service
-2. Add the service as a module in the parent `pom.xml`
-3. Ensure your service follows the same groupId structure
-
-### Common Dependencies
-The parent POM manages common dependency versions for:
-- Spring Boot 3.2.0
-- Spring Cloud 2023.0.0
-- Java 17
-
-## API Endpoints
-
-### Intershop Service
-- Main application: http://localhost:8080
-- API endpoints: http://localhost:8080/api/*
-
-### Payment Service
-- API specification: http://localhost:8081/v3/api-docs
-- Swagger UI: http://localhost:8081/swagger-ui.html
-
-## Testing
-
+### Run All Tests
 ```bash
-# Run tests for all services
+# Test all services
 mvn test
-
-# Run tests for specific service
-mvn -pl intershop test
-mvn -pl payment-service test
 ```
 
-## Docker Support
+## 🐳 Docker Support
 
-Both services include Docker support for containerized deployment. See individual service directories for Docker-specific instructions.
+### Individual Service Builds
+```bash
+# Build Intershop
+cd intershop && docker build -t intershop .
+
+# Build Payment Service
+cd payment-service && docker build -t payment-service .
+```
+
+### Complete Environment
+```bash
+# Start all services with dependencies
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+```

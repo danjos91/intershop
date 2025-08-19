@@ -1,0 +1,140 @@
+openapi: 3.0.3
+info:
+  title: Payment Service API
+  description: API для обработки платежей в приложении Intershop
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081
+    description: Payment Service Server
+paths:
+  /api/payment/balance:
+    get:
+      operationId: getBalance
+      summary: Получить баланс счета
+      description: Возвращает текущий баланс счета. Если баланс меньше общей стоимости товаров в корзине, кнопка оформления заказа должна быть отключена.
+      tags:
+        - Payment
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/payment/process:
+    post:
+      operationId: processPayment
+      summary: Обработать платеж
+      description: Обрабатывает платеж и вычитает сумму заказа из баланса. Если результат отрицательный, платеж считается неудачным.
+      tags:
+        - Payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '200':
+          description: Платеж успешно обработан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: Недостаточно средств
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    BalanceResponse:
+      type: object
+      properties:
+        balance:
+          type: number
+          format: double
+          description: Текущий баланс счета
+          example: 1000.00
+        currency:
+          type: string
+          description: Валюта баланса
+          example: "RUB"
+        timestamp:
+          type: string
+          format: date-time
+          description: Время последнего обновления баланса
+          example: "2024-01-15T10:30:00Z"
+    PaymentRequest:
+      type: object
+      required:
+        - amount
+        - orderId
+      properties:
+        amount:
+          type: number
+          format: double
+          description: Сумма к оплате
+          example: 150.00
+        orderId:
+          type: string
+          description: Идентификатор заказа
+          example: "order-123"
+        description:
+          type: string
+          description: Описание платежа
+          example: "Оплата заказа #123"
+    PaymentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Успешность операции
+          example: true
+        transactionId:
+          type: string
+          description: Идентификатор транзакции
+          example: "txn-456"
+        newBalance:
+          type: number
+          format: double
+          description: Новый баланс после операции
+          example: 850.00
+        message:
+          type: string
+          description: Сообщение о результате операции
+          example: "Платеж успешно обработан"
+        timestamp:
+          type: string
+          format: date-time
+          description: Время обработки платежа
+          example: "2024-01-15T10:30:00Z"
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Тип ошибки
+          example: "INSUFFICIENT_FUNDS"
+        message:
+          type: string
+          description: Описание ошибки
+          example: "Недостаточно средств для совершения операции"
+        timestamp:
+          type: string
+          format: date-time
+          description: Время возникновения ошибки
+          example: "2024-01-15T10:30:00Z"

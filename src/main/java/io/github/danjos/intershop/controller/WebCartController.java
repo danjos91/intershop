@@ -5,6 +5,7 @@ import io.github.danjos.intershop.model.User;
 import io.github.danjos.intershop.service.CartService;
 import io.github.danjos.intershop.service.OrderService;
 import io.github.danjos.intershop.service.UserService;
+import io.github.danjos.intershop.service.PaymentClientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -26,23 +27,27 @@ public class WebCartController {
     private final CartService cartService;
     private final OrderService orderService;
     private final UserService userService;
+    private final PaymentClientService paymentClientService;
 
     @GetMapping("/cart/items")
     public Mono<Rendering> showCart(WebSession session) {
         return Mono.zip(
                 cartService.getCartItemsReactive(session),
                 cartService.getCartTotalReactive(session),
+                cartService.isCheckoutEnabled(session),
                 userService.getCurrentUser()
             )
             .map(tuple -> {
                 List<CartItemDto> items = tuple.getT1();
                 Double total = tuple.getT2();
-                User user = tuple.getT3();
+                Boolean checkoutEnabled = tuple.getT3();
+                User user = tuple.getT4();
                 
                 return Rendering.view("cart")
                         .modelAttribute("items", items)
                         .modelAttribute("total", total)
                         .modelAttribute("empty", items.isEmpty())
+                        .modelAttribute("checkoutEnabled", checkoutEnabled)
                         .modelAttribute("user", user)
                         .build();
             })
@@ -84,24 +89,36 @@ public class WebCartController {
         
         return Mono.zip(
                 Mono.just(cartService.getCart(session)),
+                cartService.getCartTotalReactive(session),
                 userService.getCurrentUser()
             )
             .flatMap(tuple -> {
                 Map<Long, Integer> cart = tuple.getT1();
-                User user = tuple.getT2();
+                Double total = tuple.getT2();
+                User user = tuple.getT3();
                 
-                log.info("Cart items: {}, User: {}", cart, user.getUsername());
+                log.info("Cart items: {}, Total: {}, User: {}", cart, total, user.getUsername());
                 
-                return orderService.createOrderFromCart(cart, user)
-                    .map(order -> {
-                        session.getAttributes().remove("cart");
-                        log.info("Order created successfully: {}", order.getId());
-                        return Rendering.redirectTo("/orders/" + order.getId() + "?newOrder=true").build();
+                // Process payment first
+                return paymentClientService.processPayment(total, "order-" + System.currentTimeMillis())
+                    .flatMap(paymentSuccess -> {
+                        if (paymentSuccess) {
+                            log.info("Payment successful, creating order");
+                            return orderService.createOrderFromCart(cart, user)
+                                .map(order -> {
+                                    session.getAttributes().remove("cart");
+                                    log.info("Order created successfully: {}", order.getId());
+                                    return Rendering.redirectTo("/orders/" + order.getId() + "?newOrder=true").build();
+                                });
+                        } else {
+                            log.warn("Payment failed, redirecting to cart");
+                            return Mono.just(Rendering.redirectTo("/cart/items?paymentFailed=true").build());
+                        }
                     });
             })
             .onErrorResume(e -> {
                 log.error("Error in createOrder", e);
-                return Mono.just(Rendering.redirectTo("/cart/items").build());
+                return Mono.just(Rendering.redirectTo("/cart/items?error=true").build());
             });
     }
 } 

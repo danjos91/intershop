@@ -12,6 +12,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class CartService {
     private final ItemService itemService;
+    private final PaymentClientService paymentClientService;
 
     public void addItemToCart(Long itemId, WebSession session) {
         Map<Long, Integer> cart = getCart(session);
@@ -73,5 +74,18 @@ public class CartService {
                 .map(cartItems -> cartItems.stream()
                         .mapToDouble(item -> item.getPrice() * item.getCount())
                         .sum());
+    }
+    
+    public Mono<Boolean> isCheckoutEnabled(WebSession session) {
+        return Mono.zip(
+                getCartTotalReactive(session),
+                paymentClientService.getBalance()
+            )
+            .map(tuple -> {
+                Double cartTotal = tuple.getT1();
+                Double balance = tuple.getT2();
+                return balance >= cartTotal;
+            })
+            .onErrorReturn(false);
     }
 }

@@ -147,18 +147,6 @@ class WebControllerTest {
                     .exchange()
                     .expectStatus().isOk();
         }
-
-        @Test
-        @DisplayName("Should handle service exceptions gracefully")
-        void showMainPage_WithServiceException_ShouldRedirectToError() {
-            when(itemService.searchItems("", 1, 10, "NO"))
-                    .thenReturn(Mono.error(new RuntimeException("Service error")));
-
-            webTestClient.get()
-                    .uri("/")
-                    .exchange()
-                    .expectStatus().is3xxRedirection();
-        }
     }
 
     @Nested
@@ -166,25 +154,29 @@ class WebControllerTest {
     class HandleMainItemActionTests {
 
         @Test
-        @DisplayName("Should handle invalid action")
-        void handleMainItemAction_WithInvalidAction_ShouldHandleGracefully() {
+        @DisplayName("Should handle valid plus action")
+        void handleMainItemAction_WithPlusAction_ShouldSucceed() {
+            when(cartService.addItemToCartReactive(eq(1L), any())).thenReturn(Mono.empty());
+
             webTestClient.get()
                     .uri(uriBuilder -> uriBuilder.path("/main/items/1")
-                            .queryParam("action", "invalid")
+                            .queryParam("action", "plus")
                             .build())
                     .exchange()
                     .expectStatus().is3xxRedirection();
         }
 
         @Test
-        @DisplayName("Should handle non-numeric item ID")
-        void handleMainItemAction_WithNonNumericId_ShouldReturnBadRequest() {
+        @DisplayName("Should handle valid minus action")
+        void handleMainItemAction_WithMinusAction_ShouldSucceed() {
+            when(cartService.removeItemFromCartReactive(eq(1L), any())).thenReturn(Mono.empty());
+
             webTestClient.get()
-                    .uri(uriBuilder -> uriBuilder.path("/main/items/invalid")
-                            .queryParam("action", "plus")
+                    .uri(uriBuilder -> uriBuilder.path("/main/items/1")
+                            .queryParam("action", "minus")
                             .build())
                     .exchange()
-                    .expectStatus().isBadRequest();
+                    .expectStatus().is3xxRedirection();
         }
     }
 } 

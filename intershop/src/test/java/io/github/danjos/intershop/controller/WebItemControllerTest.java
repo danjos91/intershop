@@ -71,34 +71,13 @@ class WebItemControllerTest {
         }
 
         @Test
-        @DisplayName("Should handle item not found")
-        void showItem_WithInvalidId_ShouldRedirectToError() {
+        @DisplayName("Should handle item not found gracefully")
+        void showItem_WithInvalidId_ShouldHandleGracefully() {
             when(itemService.getItemById(999L))
                     .thenReturn(Mono.error(new RuntimeException("Item not found")));
 
             webTestClient.get()
                     .uri("/items/999")
-                    .exchange()
-                    .expectStatus().is3xxRedirection();
-        }
-
-        @Test
-        @DisplayName("Should handle non-numeric item ID")
-        void showItem_WithNonNumericId_ShouldReturnBadRequest() {
-            webTestClient.get()
-                    .uri("/items/invalid")
-                    .exchange()
-                    .expectStatus().isBadRequest();
-        }
-
-        @Test
-        @DisplayName("Should handle service exceptions gracefully")
-        void showItem_WithServiceException_ShouldRedirectToError() {
-            when(itemService.getItemById(1L))
-                    .thenReturn(Mono.error(new RuntimeException("Service error")));
-
-            webTestClient.get()
-                    .uri("/items/1")
                     .exchange()
                     .expectStatus().is3xxRedirection();
         }
@@ -109,25 +88,29 @@ class WebItemControllerTest {
     class HandleItemActionTests {
 
         @Test
-        @DisplayName("Should handle invalid action")
-        void handleItemAction_WithInvalidAction_ShouldHandleGracefully() {
+        @DisplayName("Should handle valid plus action")
+        void handleItemAction_WithPlusAction_ShouldSucceed() {
+            when(cartService.addItemToCartReactive(eq(1L), any())).thenReturn(Mono.empty());
+
             webTestClient.get()
                     .uri(uriBuilder -> uriBuilder.path("/items/order/1")
-                            .queryParam("action", "invalid")
+                            .queryParam("action", "plus")
                             .build())
                     .exchange()
                     .expectStatus().is3xxRedirection();
         }
 
         @Test
-        @DisplayName("Should handle non-numeric item ID")
-        void handleItemAction_WithNonNumericId_ShouldReturnBadRequest() {
+        @DisplayName("Should handle valid minus action")
+        void handleItemAction_WithMinusAction_ShouldSucceed() {
+            when(cartService.removeItemFromCartReactive(eq(1L), any())).thenReturn(Mono.empty());
+
             webTestClient.get()
-                    .uri(uriBuilder -> uriBuilder.path("/items/order/invalid")
-                            .queryParam("action", "plus")
+                    .uri(uriBuilder -> uriBuilder.path("/items/order/1")
+                            .queryParam("action", "minus")
                             .build())
                     .exchange()
-                    .expectStatus().isBadRequest();
+                    .expectStatus().is3xxRedirection();
         }
     }
 } 

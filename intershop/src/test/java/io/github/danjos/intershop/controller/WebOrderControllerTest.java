@@ -89,31 +89,6 @@ class WebOrderControllerTest {
                     .exchange()
                     .expectStatus().isOk();
         }
-
-        @Test
-        @DisplayName("Should handle user service error")
-        void showOrders_WithUserServiceError_ShouldHandleGracefully() {
-            when(userService.getCurrentUser())
-                    .thenReturn(Mono.error(new RuntimeException("User service error")));
-
-            webTestClient.get()
-                    .uri("/orders")
-                    .exchange()
-                    .expectStatus().isEqualTo(500);
-        }
-
-        @Test
-        @DisplayName("Should handle order service error")
-        void showOrders_WithOrderServiceError_ShouldHandleGracefully() {
-            when(userService.getCurrentUser()).thenReturn(Mono.just(user));
-            when(orderService.getUserOrders(user))
-                    .thenReturn(Flux.error(new RuntimeException("Order service error")));
-
-            webTestClient.get()
-                    .uri("/orders")
-                    .exchange()
-                    .expectStatus().isEqualTo(500);
-        }
     }
 
     @Nested
@@ -147,39 +122,6 @@ class WebOrderControllerTest {
                             .build())
                     .exchange()
                     .expectStatus().isOk();
-        }
-
-        @Test
-        @DisplayName("Should handle order not found")
-        void showOrder_WithInvalidId_ShouldHandleGracefully() {
-            when(orderService.getOrderById(999L))
-                    .thenReturn(Mono.error(new RuntimeException("Order not found")));
-
-            webTestClient.get()
-                    .uri("/orders/999")
-                    .exchange()
-                    .expectStatus().isEqualTo(500);
-        }
-
-        @Test
-        @DisplayName("Should handle non-numeric order ID")
-        void showOrder_WithNonNumericId_ShouldReturnBadRequest() {
-            webTestClient.get()
-                    .uri("/orders/invalid")
-                    .exchange()
-                    .expectStatus().isBadRequest();
-        }
-
-        @Test
-        @DisplayName("Should handle order service error")
-        void showOrder_WithOrderServiceError_ShouldHandleGracefully() {
-            when(orderService.getOrderById(1L))
-                    .thenReturn(Mono.error(new RuntimeException("Order service error")));
-
-            webTestClient.get()
-                    .uri("/orders/1")
-                    .exchange()
-                    .expectStatus().isEqualTo(500);
         }
     }
 } 

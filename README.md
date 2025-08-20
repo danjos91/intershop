@@ -88,8 +88,8 @@ mvn spring-boot:run
 #### Run from Multi-Project Root
 ```bash
 # Run both services simultaneously
-  mvn -pl intershop spring-boot:run &
-  mvn -pl payment-service spring-boot:run &
+  mvn -pl intershop spring-boot:run
+  mvn -pl payment-service spring-boot:run
 ```
 
 ## 🧪 Testing

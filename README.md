@@ -7,18 +7,6 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 
-## 🏗️ Project Architecture
-
-This is a **multi-project Maven setup** containing two microservices that work together to provide a complete e-commerce solution:
-
-```
-multiproject/
-├── pom.xml                 # Parent POM managing both services
-├── README.md              # This comprehensive documentation
-├── docker-compose.yml     # Complete service orchestration
-├── intershop/            # Main e-commerce service (Java 21)
-└── payment-service/      # Payment processing service (Java 21)
-```
 
 ## 🚀 Technology Stack
 
@@ -72,6 +60,11 @@ mvn clean install -DskipTests
 ```
 
 #### Run Individual Services
+
+**Redis on Docker:**
+```bash
+docker run --name redis-server -it --rm -p 6379:6379 redis:7.4.2-bookworm sh -c "redis-server & sleep 7 && redis-cli"
+```
 
 **Intershop Service:**
 ```bash

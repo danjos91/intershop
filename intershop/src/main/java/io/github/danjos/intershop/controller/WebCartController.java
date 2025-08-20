@@ -35,13 +35,15 @@ public class WebCartController {
                 cartService.getCartItemsReactive(session),
                 cartService.getCartTotalReactive(session),
                 cartService.isCheckoutEnabled(session),
-                userService.getCurrentUser()
+                userService.getCurrentUser(),
+                paymentClientService.getBalance()
             )
             .map(tuple -> {
                 List<CartItemDto> items = tuple.getT1();
                 Double total = tuple.getT2();
                 Boolean checkoutEnabled = tuple.getT3();
                 User user = tuple.getT4();
+                Double balance = tuple.getT5();
                 
                 return Rendering.view("cart")
                         .modelAttribute("items", items)
@@ -49,6 +51,7 @@ public class WebCartController {
                         .modelAttribute("empty", items.isEmpty())
                         .modelAttribute("checkoutEnabled", checkoutEnabled)
                         .modelAttribute("user", user)
+                        .modelAttribute("balance", balance)
                         .build();
             })
             .onErrorResume(e -> {

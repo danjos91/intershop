@@ -72,7 +72,7 @@
                 </form>
                 <div th:if="${!checkoutEnabled and !empty}" style="color: orange; margin-top: 10px; font-size: 14px;">
                     💡 Для оформления заказа необходимо пополнить счет на 
-                    <span th:text="${total - 1000.0}"></span> руб.
+                    <span th:text="${total - balance}"></span> руб.
                 </div>
             </td>
         </tr>

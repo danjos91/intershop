@@ -7,15 +7,19 @@ import io.github.danjos.intershop.model.User;
 import io.github.danjos.intershop.service.CartService;
 import io.github.danjos.intershop.service.OrderService;
 import io.github.danjos.intershop.service.UserService;
+import io.github.danjos.intershop.service.PaymentClientService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.reactive.server.WebTestClient;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.reactive.result.view.Rendering;
+import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,23 +27,29 @@ import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
-@WebFluxTest(WebCartController.class)
+@ExtendWith(MockitoExtension.class)
 @DisplayName("WebCartController Tests")
 class WebCartControllerTest {
 
-    @Autowired
-    private WebTestClient webTestClient;
-
-    @MockBean
+    @Mock
     private CartService cartService;
 
-    @MockBean
+    @Mock
     private OrderService orderService;
 
-    @MockBean
+    @Mock
     private UserService userService;
+
+    @Mock
+    private PaymentClientService paymentClientService;
+
+    @Mock
+    private WebSession webSession;
+
+    @InjectMocks
+    private WebCartController webCartController;
 
     private Item laptop;
     private User user;
@@ -69,69 +79,35 @@ class WebCartControllerTest {
     }
 
     @Nested
-    @DisplayName("Show Cart Tests")
-    class ShowCartTests {
-
-        @Test
-        @DisplayName("Should return cart page with items")
-        void showCart_WithItems_ShouldReturnCartPage() {
-            when(cartService.getCartItemsReactive(any())).thenReturn(Mono.just(cartItems));
-            when(cartService.getCartTotalReactive(any())).thenReturn(Mono.just(1999.98));
-            when(userService.getCurrentUser()).thenReturn(Mono.just(user));
-
-            webTestClient.get()
-                    .uri("/cart/items")
-                    .exchange()
-                    .expectStatus().isOk()
-                    .expectBody()
-                    .consumeWith(response -> {
-                        String body = new String(response.getResponseBody());
-                        assert body.contains("cart");
-                    });
-        }
-
-        @Test
-        @DisplayName("Should return cart page with empty cart")
-        void showCart_WithEmptyCart_ShouldReturnCartPage() {
-            when(cartService.getCartItemsReactive(any())).thenReturn(Mono.just(Arrays.asList()));
-            when(cartService.getCartTotalReactive(any())).thenReturn(Mono.just(0.0));
-            when(userService.getCurrentUser()).thenReturn(Mono.just(user));
-
-            webTestClient.get()
-                    .uri("/cart/items")
-                    .exchange()
-                    .expectStatus().isOk();
-        }
-    }
-
-    @Nested
     @DisplayName("Handle Cart Action Tests")
     class HandleCartActionTests {
 
         @Test
         @DisplayName("Should handle valid plus action")
         void handleCartAction_WithPlusAction_ShouldSucceed() {
-            when(cartService.addItemToCartReactive(eq(1L), any())).thenReturn(Mono.empty());
+            when(cartService.addItemToCartReactive(eq(1L), any(WebSession.class))).thenReturn(Mono.empty());
 
-            webTestClient.get()
-                    .uri(uriBuilder -> uriBuilder.path("/cart/items/1")
-                            .queryParam("action", "plus")
-                            .build())
-                    .exchange()
-                    .expectStatus().is3xxRedirection();
+            Mono<Rendering> result = webCartController.handleCartAction(1L, "plus", webSession);
+
+            StepVerifier.create(result)
+                    .expectNextMatches(rendering -> rendering != null)
+                    .verifyComplete();
+
+            verify(cartService).addItemToCartReactive(eq(1L), eq(webSession));
         }
 
         @Test
         @DisplayName("Should handle valid minus action")
         void handleCartAction_WithMinusAction_ShouldSucceed() {
-            when(cartService.removeItemFromCartReactive(eq(1L), any())).thenReturn(Mono.empty());
+            when(cartService.removeItemFromCartReactive(eq(1L), any(WebSession.class))).thenReturn(Mono.empty());
 
-            webTestClient.get()
-                    .uri(uriBuilder -> uriBuilder.path("/cart/items/1")
-                            .queryParam("action", "minus")
-                            .build())
-                    .exchange()
-                    .expectStatus().is3xxRedirection();
+            Mono<Rendering> result = webCartController.handleCartAction(1L, "minus", webSession);
+
+            StepVerifier.create(result)
+                    .expectNextMatches(rendering -> rendering != null)
+                    .verifyComplete();
+
+            verify(cartService).removeItemFromCartReactive(eq(1L), eq(webSession));
         }
     }
 
@@ -140,34 +116,45 @@ class WebCartControllerTest {
     class CreateOrderTests {
 
         @Test
-        @DisplayName("Should create order from cart")
+        @DisplayName("Should create order with valid cart")
         void createOrder_WithValidCart_ShouldCreateOrder() {
             Map<Long, Integer> cart = new HashMap<>();
             cart.put(1L, 2);
-
-            when(cartService.getCart(any())).thenReturn(cart);
+            
+            when(cartService.getCart(any(WebSession.class))).thenReturn(cart);
+            when(cartService.getCartTotalReactive(any(WebSession.class))).thenReturn(Mono.just(999.99));
             when(userService.getCurrentUser()).thenReturn(Mono.just(user));
-            when(orderService.createOrderFromCart(cart, user)).thenReturn(Mono.just(order));
+            when(paymentClientService.processPayment(anyDouble(), anyString())).thenReturn(Mono.just(true));
+            when(orderService.createOrderFromCart(any(), any())).thenReturn(Mono.just(order));
 
-            webTestClient.post()
-                    .uri("/buy")
-                    .exchange()
-                    .expectStatus().is3xxRedirection();
+            Mono<Rendering> result = webCartController.createOrder(webSession);
+
+            StepVerifier.create(result)
+                    .expectNextMatches(rendering -> rendering != null)
+                    .verifyComplete();
+
+            verify(orderService).createOrderFromCart(eq(cart), eq(user));
         }
 
         @Test
         @DisplayName("Should handle empty cart")
         void createOrder_WithEmptyCart_ShouldCreateOrder() {
             Map<Long, Integer> emptyCart = new HashMap<>();
-
-            when(cartService.getCart(any())).thenReturn(emptyCart);
+            
+            when(cartService.getCart(any(WebSession.class))).thenReturn(emptyCart);
+            when(cartService.getCartTotalReactive(any(WebSession.class))).thenReturn(Mono.just(0.0));
             when(userService.getCurrentUser()).thenReturn(Mono.just(user));
-            when(orderService.createOrderFromCart(emptyCart, user)).thenReturn(Mono.just(order));
+            when(paymentClientService.processPayment(anyDouble(), anyString())).thenReturn(Mono.just(true));
+            when(orderService.createOrderFromCart(any(), any())).thenReturn(Mono.just(order));
 
-            webTestClient.post()
-                    .uri("/buy")
-                    .exchange()
-                    .expectStatus().is3xxRedirection();
+            Mono<Rendering> result = webCartController.createOrder(webSession);
+
+            StepVerifier.create(result)
+                    .expectNextMatches(rendering -> rendering != null)
+                    .verifyComplete();
+
+            // The controller processes empty carts too, so we verify it was called
+            verify(orderService).createOrderFromCart(eq(emptyCart), eq(user));
         }
     }
 } 

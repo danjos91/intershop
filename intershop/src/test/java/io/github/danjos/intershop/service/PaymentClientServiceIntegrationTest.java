@@ -1,10 +1,15 @@
 package io.github.danjos.intershop.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -18,6 +23,23 @@ class PaymentClientServiceIntegrationTest {
     @Autowired
     private PaymentClientService paymentClientService;
 
+    @TestConfiguration
+    static class TestConfig {
+        
+        @Bean
+        @Primary
+        public WebClient testWebClient() {
+            return WebClient.builder()
+                    .baseUrl("http://localhost:8081")
+                    .build();
+        }
+    }
+
+    @BeforeEach
+    void setUp() {
+        assertThat(paymentClientService).isNotNull();
+    }
+
     @Test
     @DisplayName("Should create service instance successfully")
     void shouldCreateServiceInstance() {
@@ -25,31 +47,27 @@ class PaymentClientServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should handle getBalance method call")
+    @DisplayName("Should handle getBalance method call with connection error")
     void shouldHandleGetBalanceMethodCall() {
-        // When
         Mono<Double> result = paymentClientService.getBalance();
 
-        // Then
         StepVerifier.create(result)
                 .assertNext(balance -> {
                     assertThat(balance).isNotNull();
-                    // In test environment, this will likely return 0.0 due to no payment service running
+                    assertThat(balance).isEqualTo(0.0);
                 })
                 .verifyComplete();
     }
 
     @Test
-    @DisplayName("Should handle processPayment method call")
+    @DisplayName("Should handle processPayment method call with connection error")
     void shouldHandleProcessPaymentMethodCall() {
-        // When
         Mono<Boolean> result = paymentClientService.processPayment(100.0, "test-order-123");
 
-        // Then
         StepVerifier.create(result)
                 .assertNext(success -> {
                     assertThat(success).isNotNull();
-                    // In test environment, this will likely return false due to no payment service running
+                    assertThat(success).isFalse();
                 })
                 .verifyComplete();
     }
@@ -57,27 +75,38 @@ class PaymentClientServiceIntegrationTest {
     @Test
     @DisplayName("Should handle processPayment with zero amount")
     void shouldHandleProcessPaymentWithZeroAmount() {
-        // When
         Mono<Boolean> result = paymentClientService.processPayment(0.0, "test-order-zero");
 
-        // Then
         StepVerifier.create(result)
                 .assertNext(success -> {
                     assertThat(success).isNotNull();
+                    assertThat(success).isFalse();
                 })
                 .verifyComplete();
     }
 
     @Test
-    @DisplayName("Should handle processPayment with null orderId")
-    void shouldHandleProcessPaymentWithNullOrderId() {
-        // When
-        Mono<Boolean> result = paymentClientService.processPayment(100.0, null);
+    @DisplayName("Should handle processPayment with large amount")
+    void shouldHandleProcessPaymentWithLargeAmount() {
+        Mono<Boolean> result = paymentClientService.processPayment(999999.99, "test-order-large");
 
-        // Then
         StepVerifier.create(result)
                 .assertNext(success -> {
                     assertThat(success).isNotNull();
+                    assertThat(success).isFalse();
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should handle processPayment with negative amount")
+    void shouldHandleProcessPaymentWithNegativeAmount() {
+        Mono<Boolean> result = paymentClientService.processPayment(-100.0, "test-order-negative");
+
+        StepVerifier.create(result)
+                .assertNext(success -> {
+                    assertThat(success).isNotNull();
+                    assertThat(success).isFalse();
                 })
                 .verifyComplete();
     }

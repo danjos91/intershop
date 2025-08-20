@@ -102,7 +102,6 @@ public class WebCartController {
                 
                 log.info("Cart items: {}, Total: {}, User: {}", cart, total, user.getUsername());
                 
-                // Process payment first
                 return paymentClientService.processPayment(total, "order-" + System.currentTimeMillis())
                     .flatMap(paymentSuccess -> {
                         if (paymentSuccess) {

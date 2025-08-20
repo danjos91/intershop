@@ -103,17 +103,14 @@ public class ItemService {
     }
 
     public Flux<Item> getItemByIds(Set<Long> ids) {
-        // First, try to get all items from cache
         return Flux.fromIterable(ids)
             .flatMap(id -> {
                 String cacheKey = ITEM_CACHE_PREFIX + id;
                 return redisTemplate.opsForValue().get(cacheKey)
                     .map(cachedItem -> (Item) cachedItem);
-                    //.defaultIfEmpty(null); // Return null if not in cache
             })
             .collectList()
             .flatMapMany(cachedItems -> {
-                // Find which items are missing from cache
                 Set<Long> missingIds = new HashSet<>();
                 List<Item> result = new ArrayList<>();
                 
@@ -126,13 +123,10 @@ public class ItemService {
                 }
                 
                 if (missingIds.isEmpty()) {
-                    // All items were in cache
                     return Flux.fromIterable(result);
                 } else {
-                    // Fetch missing items from database in ONE query
                     return itemRepository.findAllItemsByIds(missingIds)
                         .flatMap(item -> {
-                            // Cache the newly fetched item
                             String cacheKey = ITEM_CACHE_PREFIX + item.getId();
                             return redisTemplate.opsForValue()
                                 .set(cacheKey, item, CACHE_TTL)
@@ -140,7 +134,6 @@ public class ItemService {
                         })
                         .collectList()
                         .flatMapMany(missingItems -> {
-                            // Combine cached and newly fetched items
                             result.addAll(missingItems);
                             return Flux.fromIterable(result);
                         });

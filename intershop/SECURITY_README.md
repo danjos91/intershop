@@ -93,8 +93,13 @@ CREATE TABLE users (
 ## Testing
 
 ### **Test User Credentials:**
-- Username: `testuser`
-- Password: `testpass`
+test users available:
+- Username: `currentUser` | Password: `testpass`
+- Username: `admin` | Password: `testpass`
+- Username: `user1` | Password: `testpass`
+- Username: `user2` | Password: `testpass`
+
+**Note**: All passwords are the same: `testpass` (encoded with BCrypt)
 
 ### **Test Scenarios:**
 1. **Public Access**: Visit `/` and `/items` - should work without login

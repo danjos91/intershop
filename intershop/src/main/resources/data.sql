@@ -1,5 +1,8 @@
 INSERT INTO users (username, password, email, created_at) 
 VALUES ('currentUser', 'password123', 'user@example.com', CURRENT_TIMESTAMP);
+VALUES ('admin', 'admin', 'admin@example.com', CURRENT_TIMESTAMP);
+VALUES ('user1', 'user1', 'user1@example.com', CURRENT_TIMESTAMP);
+VALUES ('user2', 'user2', 'user2@example.com', CURRENT_TIMESTAMP);
 
 INSERT INTO items (title, description, price, img_path, stock, created_at) VALUES
 ('Laptop', 'High-performance laptop with latest specifications', 999.99, 'images/laptop.jpg', 10, CURRENT_TIMESTAMP),
